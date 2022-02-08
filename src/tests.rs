@@ -1,5 +1,5 @@
 use std::{fs,env};
-use crate::ktest_tool;
+use crate::ktest_parser;
 
 #[cfg(test)]
 mod tests {
@@ -13,7 +13,7 @@ mod tests {
         dir.push("test_cases");
         let paths =fs::read_dir(dir);
         for test_folder in paths.unwrap() {
-            let ktests = ktest_tool::read_klee_folder(test_folder.unwrap().path());
+            let ktests = ktest_parser::read_klee_folder(test_folder.unwrap().path());
             assert!(ktests.is_ok());
         }
 
