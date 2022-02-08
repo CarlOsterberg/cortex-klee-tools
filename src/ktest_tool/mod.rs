@@ -7,6 +7,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 //https://github.com/klee/klee/blob/master/tools/ktest-tool/ktest-tool
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct KtestData {
     hdr: String,
     version: u32,
