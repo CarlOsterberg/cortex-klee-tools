@@ -25,6 +25,13 @@ pub struct Instructions {
     instr: Vec<(String, u32)>,
 }
 
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct Labels {
+    file_name: String,
+    labels: Vec<String>
+}
+
 impl KtestData {
     pub fn new(file_name: String, bytes: Vec<u8>) -> Result<KtestData, String> {
         //read header
@@ -171,6 +178,22 @@ impl Instructions {
     }
 }
 
+impl Labels {
+    pub fn new(file_name: String, file_contents: String) -> Result<Labels, String> {
+        let mut labels = Vec::new();
+        let labels_str: Vec<&str> = file_contents.split(" ").collect();
+        for l in labels_str {
+            labels.push(l.to_string())
+        }
+        Ok(
+            Labels {
+                file_name,
+                labels
+            }
+        )
+    }
+}
+
 pub fn read_ktests(path: PathBuf) -> Result<Vec<KtestData>, String> {
     let dir_read_res = path.read_dir();
     let mut ktests = Vec::new();
@@ -232,6 +255,39 @@ pub fn read_instr(path: PathBuf) -> Result<Vec<Instructions>, String> {
                 }
             }
             Ok(instr_files)
+        }
+        Err(msg) => Err(msg.to_string()),
+    }
+}
+
+pub fn read_labels(path: PathBuf) -> Result<Vec<Labels>, String> {
+    let dir_read_res = path.read_dir();
+    let mut label_files = Vec::new();
+    match dir_read_res {
+        Ok(read_dir) => {
+            for file_read_res in read_dir {
+                match file_read_res {
+                    Ok(file) => {
+                        let validator = Regex::new(r".+[.]labels").unwrap();
+                        if validator.is_match(file.file_name().to_str().unwrap()) {
+                            let file_content_read_res = fs::read_to_string(file.path());
+                            if file_content_read_res.is_err() {
+                                return Err(file_content_read_res.unwrap_err().to_string());
+                            }
+                            let obj = Labels::new(
+                                file.file_name().to_str().unwrap().to_string(),
+                                file_content_read_res.unwrap(),
+                            );
+                            if obj.is_err() {
+                                return Err(obj.unwrap_err());
+                            }
+                            label_files.push(obj.unwrap());
+                        }
+                    }
+                    Err(msg) => return Err(msg.to_string()),
+                }
+            }
+            Ok(label_files)
         }
         Err(msg) => Err(msg.to_string()),
     }
