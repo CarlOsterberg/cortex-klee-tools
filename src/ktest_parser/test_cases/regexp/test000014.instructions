@@ -1,0 +1,11 @@
+ZExt : 6
+SExt : 44
+Ret : 10
+GetElementPtr : 37
+Br : 53
+ICmp : 54
+Load : 123
+Call : 30
+Store : 34
+Select : 5
+Alloca : 30

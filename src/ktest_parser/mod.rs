@@ -1,6 +1,6 @@
-use std::{path::{PathBuf}};
 use regex::Regex;
 use std::fs;
+use std::path::PathBuf;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
@@ -9,6 +9,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct KtestData {
+    file_name: String,
     hdr: String,
     version: u32,
     args: Vec<String>,
@@ -17,11 +18,17 @@ pub struct KtestData {
     objs: Vec<(String, Vec<u8>)>,
 }
 
-impl KtestData {
-    pub fn new(bytes: Vec<u8>) -> Result<KtestData, String> {
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct Instructions {
+    file_name: String,
+    instr: Vec<(String, u32)>,
+}
 
+impl KtestData {
+    pub fn new(file_name: String, bytes: Vec<u8>) -> Result<KtestData, String> {
         //read header
-        let read_hdr= std::str::from_utf8(&bytes[0..5]);
+        let read_hdr = std::str::from_utf8(&bytes[0..5]);
         if read_hdr.is_err() {
             return Err(read_hdr.unwrap_err().to_string());
         }
@@ -40,7 +47,7 @@ impl KtestData {
 
         //read args
         let mut read = 9;
-        let mut num_args_as_bytes = &bytes[read..read+4];
+        let mut num_args_as_bytes = &bytes[read..read + 4];
         read += 4;
         let read_num_args = num_args_as_bytes.read_u32::<BigEndian>();
         if read_num_args.is_err() {
@@ -48,15 +55,19 @@ impl KtestData {
         }
         let num_args = read_num_args.unwrap();
         let mut args = Vec::new();
-        for _ in 0..num_args  {
-            let mut size_as_bytes = &bytes[read..read+4];
+        for _ in 0..num_args {
+            let mut size_as_bytes = &bytes[read..read + 4];
             read += 4;
             let read_size = size_as_bytes.read_u32::<BigEndian>();
             if read_size.is_err() {
                 return Err(read_size.unwrap_err().to_string());
             }
             let size = read_size.unwrap();
-            args.push(std::str::from_utf8(&bytes[read..read + size as usize]).unwrap().to_string());
+            args.push(
+                std::str::from_utf8(&bytes[read..read + size as usize])
+                    .unwrap()
+                    .to_string(),
+            );
             read += size as usize;
         }
 
@@ -64,9 +75,9 @@ impl KtestData {
         let mut sym_argvs = 0;
         let mut sym_argv_len = 0;
         if version >= 2 {
-            let mut sym_argvs_as_bytes = &bytes[read..read+4];
+            let mut sym_argvs_as_bytes = &bytes[read..read + 4];
             read += 4;
-            let mut sym_argv_len_as_bytes = &bytes[read..read+4];
+            let mut sym_argv_len_as_bytes = &bytes[read..read + 4];
             read += 4;
             let read_sym_argvs = sym_argvs_as_bytes.read_u32::<BigEndian>();
             let read_sym_argv_len = sym_argv_len_as_bytes.read_u32::<BigEndian>();
@@ -81,8 +92,8 @@ impl KtestData {
         }
 
         //read num objects
-        let mut num_objs_as_bytes = &bytes[read..read+4];
-        read +=4;
+        let mut num_objs_as_bytes = &bytes[read..read + 4];
+        read += 4;
         let read_num_objs = num_objs_as_bytes.read_u32::<BigEndian>();
         if read_num_objs.is_err() {
             return Err(read_num_objs.unwrap_err().to_string());
@@ -90,9 +101,8 @@ impl KtestData {
         let num_objs = read_num_objs.unwrap();
         let mut objs = Vec::new();
         for _ in 0..num_objs {
-
             //get object name
-            let mut size_as_bytes = &bytes[read..read+4];
+            let mut size_as_bytes = &bytes[read..read + 4];
             read += 4;
             let read_size = size_as_bytes.read_u32::<BigEndian>();
             if read_size.is_err() {
@@ -105,9 +115,9 @@ impl KtestData {
             }
             let name = convert_to_str.unwrap();
             read += size as usize;
-            
+
             //get object contents
-            size_as_bytes = &bytes[read..read+4];
+            size_as_bytes = &bytes[read..read + 4];
             let read_size = size_as_bytes.read_u32::<BigEndian>();
             if read_size.is_err() {
                 return Err(read_size.unwrap_err().to_string());
@@ -116,9 +126,10 @@ impl KtestData {
             read += 4;
             let obj_size_as_bytes = &bytes[read..read + size as usize];
             read += size as usize;
-            objs.push((name.to_string(),obj_size_as_bytes.to_vec()))
+            objs.push((name.to_string(), obj_size_as_bytes.to_vec()))
         }
         Ok(KtestData {
+            file_name,
             hdr,
             version,
             args,
@@ -129,7 +140,38 @@ impl KtestData {
     }
 }
 
-pub fn read_klee_folder(path: PathBuf) -> Result<Vec<KtestData>,String> {
+impl Instructions {
+    pub fn new(file_name: String, file_contents: String) -> Result<Instructions, String> {
+        let rows: Vec<&str> = file_contents.split("\n").collect();
+        let mut instr = Vec::new();
+        for row in rows {
+            let mut splits = row.split(" : ");
+            let name_split = splits.next();
+            if name_split.is_none() {
+                return Err("Cannot parse: ".to_string() + &file_name);
+            }
+            let nmbr_split = splits.next();
+            if nmbr_split.is_none() {
+                return Err("Cannot parse: ".to_string() + &file_name);
+            }
+            let convert = nmbr_split.unwrap().parse::<u32>();
+            if convert.is_err() {
+                return Err("Cannot parse: ".to_string() + &file_name);
+            }
+            let name = name_split.unwrap().to_string();
+            let nmbr = convert.unwrap();
+            instr.push((name,nmbr));
+        }
+        Ok(
+            Instructions {
+                file_name,
+                instr
+            }
+        )
+    }
+}
+
+pub fn read_ktests(path: PathBuf) -> Result<Vec<KtestData>, String> {
     let dir_read_res = path.read_dir();
     let mut ktests = Vec::new();
     match dir_read_res {
@@ -143,18 +185,54 @@ pub fn read_klee_folder(path: PathBuf) -> Result<Vec<KtestData>,String> {
                             if file_content_read_res.is_err() {
                                 return Err(file_content_read_res.unwrap_err().to_string());
                             }
-                            let obj = KtestData::new(file_content_read_res.unwrap());
+                            let obj = KtestData::new(
+                                file.file_name().to_str().unwrap().to_string(),
+                                file_content_read_res.unwrap(),
+                            );
                             if obj.is_err() {
                                 return Err(obj.unwrap_err());
                             }
                             ktests.push(obj.unwrap());
                         }
-                    },
-                    Err(msg) => return Err(msg.to_string())
+                    }
+                    Err(msg) => return Err(msg.to_string()),
                 }
             }
             Ok(ktests)
-        },
-        Err(msg) => Err(msg.to_string())
+        }
+        Err(msg) => Err(msg.to_string()),
+    }
+}
+
+pub fn read_instr(path: PathBuf) -> Result<Vec<Instructions>, String> {
+    let dir_read_res = path.read_dir();
+    let mut instr_files = Vec::new();
+    match dir_read_res {
+        Ok(read_dir) => {
+            for file_read_res in read_dir {
+                match file_read_res {
+                    Ok(file) => {
+                        let validator = Regex::new(r".+[.]instructions").unwrap();
+                        if validator.is_match(file.file_name().to_str().unwrap()) {
+                            let file_content_read_res = fs::read_to_string(file.path());
+                            if file_content_read_res.is_err() {
+                                return Err(file_content_read_res.unwrap_err().to_string());
+                            }
+                            let obj = Instructions::new(
+                                file.file_name().to_str().unwrap().to_string(),
+                                file_content_read_res.unwrap(),
+                            );
+                            if obj.is_err() {
+                                return Err(obj.unwrap_err());
+                            }
+                            instr_files.push(obj.unwrap());
+                        }
+                    }
+                    Err(msg) => return Err(msg.to_string()),
+                }
+            }
+            Ok(instr_files)
+        }
+        Err(msg) => Err(msg.to_string()),
     }
 }

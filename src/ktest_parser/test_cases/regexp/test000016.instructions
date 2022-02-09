@@ -1,0 +1,10 @@
+SExt : 45
+Ret : 21
+GetElementPtr : 46
+Br : 78
+ICmp : 58
+Load : 160
+Call : 68
+Store : 79
+Select : 6
+Alloca : 68

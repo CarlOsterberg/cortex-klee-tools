@@ -1,0 +1,9 @@
+SExt : 41
+Ret : 13
+GetElementPtr : 47
+Br : 59
+ICmp : 47
+Load : 116
+Call : 38
+Store : 43
+Alloca : 38
