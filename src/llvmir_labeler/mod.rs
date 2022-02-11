@@ -72,6 +72,7 @@ impl Labeler {
     }
 
 
+    //Renames the uses of register after the first pass has been done
     pub fn rename_uses(&mut self, file_contents: String) -> String {
         let mut fn_nr: u32 = 0;
         let rows: Vec<&str> = file_contents.split("\n").collect();
@@ -98,7 +99,7 @@ impl Labeler {
                             parts.push(s.to_string());
                             continue;
                         }
-                        let mut number;
+                        /*let mut number;
                         for cap in use_of_reg.captures_iter(s) {
                             number = cap[1].to_string().clone();
                             if self.label_map.contains_key(&(number.clone(), fn_nr)) {
@@ -113,8 +114,9 @@ impl Labeler {
                                 number_clone = format!("%{}", number_clone);
                                 new_s = str::replace(&new_s, &number_clone, &replacement);
                             }
-                        }
-                        parts.push(new_s.to_string())
+                        }*/
+                        //parts.push(new_s.to_string());
+                        parts.push(self.relabel_row(s.to_string(), &fn_nr));
                     }
                     i = 0;
                     for p in parts {
@@ -127,7 +129,7 @@ impl Labeler {
                     }
                 }
                 else {
-                    let mut number;
+                    /*let mut number;
                     for cap in use_of_reg.captures_iter(row) {
                         number = cap[1].to_string().clone();
                         if self.label_map.contains_key(&(number.clone(), fn_nr)) {
@@ -142,7 +144,8 @@ impl Labeler {
                             new_row = str::replace(&row, &number_clone, &replacement);
 
                         }
-                    }
+                    }*/
+                    new_row = self.relabel_row(row.to_string(), &fn_nr)
                 }
             }
             new_rows.push(new_row);
@@ -169,12 +172,13 @@ impl Labeler {
                     number_as_string = format!("{}{}", number_as_string, c);
                 }
                 else {
-                    endIndex = i - 1;
+                    endIndex = i;
                     foundPercent = false;
                     //check if number is in the map and replace
                     if self.label_map.contains_key(&(number_as_string.clone(), *fn_nr)) {
                         row_clone.replace_range(startIndex..endIndex, 
                             self.label_map.get(&(number_as_string.clone(), *fn_nr)).unwrap());
+                        println!("replacing with {}", self.label_map.get(&(number_as_string.clone(), *fn_nr)).unwrap());
                     }
                     number_as_string = "".to_string();
                 }
