@@ -161,31 +161,35 @@ impl Labeler {
     }
 
     pub fn relabel_row(&mut self, row: String, fn_nr: &u32) -> String {
-        let mut startIndex = 0;
-        let mut endIndex = 0;
-        let mut foundPercent = false;
+        let mut start_index = 0;
+        let mut end_index = 0;
+        let mut found_percent = false;
         let mut number_as_string = "".to_string();
         let mut row_clone = row.clone();
+        let mut index_delta = 0;      
         for (i, c) in row.chars().enumerate() {
-            if foundPercent {
+            if found_percent {
                 if c.is_numeric() {
                     number_as_string = format!("{}{}", number_as_string, c);
                 }
                 else {
-                    endIndex = i;
-                    foundPercent = false;
+                    end_index = i;
+                    found_percent = false;
                     //check if number is in the map and replace
                     if self.label_map.contains_key(&(number_as_string.clone(), *fn_nr)) {
-                        row_clone.replace_range(startIndex..endIndex, 
-                            self.label_map.get(&(number_as_string.clone(), *fn_nr)).unwrap());
-                        println!("replacing with {}", self.label_map.get(&(number_as_string.clone(), *fn_nr)).unwrap());
+                        let replacement = self.label_map.get(&(number_as_string.clone(), *fn_nr)).unwrap();
+                        row_clone.replace_range((start_index + index_delta)..(end_index + index_delta), replacement);
+                        index_delta += replacement.len();
+                        if index_delta >= (end_index - start_index){
+                            index_delta -= (end_index - start_index);
+                        }
                     }
                     number_as_string = "".to_string();
                 }
             }
             if c == '%' {
-                foundPercent = true;
-                startIndex = i + 1;
+                found_percent = true;
+                start_index = i + 1;
             }
 
         }
