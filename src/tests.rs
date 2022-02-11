@@ -50,5 +50,9 @@ mod tests {
         for cap in assignment.captures_iter(assig_test) {
             println!("yo yo {}", &cap[1]);
         }
+
+        let use_of_reg = Regex::new(r"%(?P<x>[0-9]+)").unwrap();
+        let use_test = "isvdvodsf p %123   inpfisn134vq3rv";
+        assert!(use_of_reg.is_match(use_test));
     }
 }
