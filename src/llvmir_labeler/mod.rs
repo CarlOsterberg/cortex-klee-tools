@@ -145,11 +145,11 @@ impl Labeler {
                     //check if number is in the map and replace
                     if self.label_map.contains_key(&(number_as_string.clone(), *fn_nr)) {
                         let replacement = self.label_map.get(&(number_as_string.clone(), *fn_nr)).unwrap();
-                        let actual_start_index = (start_index as i32+ index_delta) as u32;
-                        let actual_end_index = (end_index as i32 + index_delta) as u32;
-                        row_clone.replace_range(actual_start_index as usize..actual_end_index as usize, replacement);
+                        let actual_start_index = (start_index as i32+ index_delta) as usize;
+                        let actual_end_index = (end_index as i32 + index_delta) as usize;
+                        row_clone.replace_range(actual_start_index..actual_end_index, replacement);
                         index_delta += replacement.len() as i32;
-                        index_delta -= (end_index - start_index as usize) as i32;
+                        index_delta -= (end_index - start_index) as i32;
                     }
                     number_as_string = "".to_string();
                 }
