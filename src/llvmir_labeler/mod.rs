@@ -165,7 +165,7 @@ impl Labeler {
 
     pub fn label_file(&mut self, path: PathBuf) -> Result<String, String> {
         let dir_read_res = path.read_dir();
-        let validator = Regex::new(r"assembly.ll").unwrap();
+        let validator = Regex::new(r"assembly_reg_ex.ll").unwrap();
         match dir_read_res {
             Ok(read_dir) => {
                 for file_read_res in read_dir {
