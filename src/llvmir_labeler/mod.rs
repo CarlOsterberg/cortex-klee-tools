@@ -99,23 +99,6 @@ impl Labeler {
                             parts.push(s.to_string());
                             continue;
                         }
-                        /*let mut number;
-                        for cap in use_of_reg.captures_iter(s) {
-                            number = cap[1].to_string().clone();
-                            if self.label_map.contains_key(&(number.clone(), fn_nr)) {
-                                let mut number_clone = number.clone();
-                                //If the reg. nr has changed it should be in the map
-                                //parts.push(use_of_reg.replace_all(s, self.label_map.get(&(number, fn_nr)).unwrap()).to_string());
-                                let mut replacement = self.label_map.get(&(number, fn_nr)).unwrap().to_string();
-                                replacement = format!("%{}", replacement);
-                                //parts.push(use_of_reg.replace_all(s, replacement).to_string());
-                                //new_s = use_of_reg.replace_all(&new_s, replacement).to_string();
-                                //FIX THIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                                number_clone = format!("%{}", number_clone);
-                                new_s = str::replace(&new_s, &number_clone, &replacement);
-                            }
-                        }*/
-                        //parts.push(new_s.to_string());
                         parts.push(self.relabel_row(s.to_string(), &fn_nr));
                     }
                     i = 0;
@@ -129,22 +112,6 @@ impl Labeler {
                     }
                 }
                 else {
-                    /*let mut number;
-                    for cap in use_of_reg.captures_iter(row) {
-                        number = cap[1].to_string().clone();
-                        if self.label_map.contains_key(&(number.clone(), fn_nr)) {
-                            let mut number_clone = number.clone();
-                            //If the reg. nr has changed it should be in the map
-                            //new_row = use_of_reg.replace_all(row, self.label_map.get(&(number, fn_nr)).unwrap()).to_string();
-                            let mut replacement = self.label_map.get(&(number, fn_nr)).unwrap().to_string();
-                            replacement = format!("%{}", replacement);
-                            //new_row = use_of_reg.replace_all(row, replacement).to_string();
-                            //FIX THIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            number_clone = format!("%{}", number_clone);
-                            new_row = str::replace(&row, &number_clone, &replacement);
-
-                        }
-                    }*/
                     new_row = self.relabel_row(row.to_string(), &fn_nr)
                 }
             }

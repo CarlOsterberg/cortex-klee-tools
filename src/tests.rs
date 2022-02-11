@@ -48,7 +48,7 @@ mod tests {
         let assig_test = "   %322                  =";
         assert!(assignment.is_match(assig_test));
         for cap in assignment.captures_iter(assig_test) {
-            println!("yo yo {}", &cap[1]);
+            println!("{}", &cap[1]);
         }
 
         let use_of_reg = Regex::new(r"%(?P<x>[0-9]+)").unwrap();
