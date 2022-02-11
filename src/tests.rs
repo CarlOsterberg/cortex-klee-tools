@@ -54,5 +54,19 @@ mod tests {
         let use_of_reg = Regex::new(r"%(?P<x>[0-9]+)").unwrap();
         let use_test = "isvdvodsf p %123   inpfisn134vq3rv";
         assert!(use_of_reg.is_match(use_test));
+
+    }
+
+    #[test]    
+    fn test_labels_tool() {
+        let mut dir = env::current_dir().unwrap();
+        dir.push("src");
+        dir.push("ktest_parser");
+        dir.push("test_cases");
+        let paths = fs::read_dir(dir);
+        for test_folder in paths.unwrap() {
+            let labels = ktest_parser::read_labels(test_folder.unwrap().path());
+            assert!(labels.is_ok());
+        }
     }
 }
