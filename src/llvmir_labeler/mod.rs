@@ -128,12 +128,12 @@ impl Labeler {
     }
 
     pub fn relabel_row(&mut self, row: String, fn_nr: &u32) -> String {
-        let mut start_index = 0;
-        let mut end_index = 0;
+        let mut start_index: usize = 0;
+        let mut end_index: usize = 0;
         let mut found_percent = false;
         let mut number_as_string = "".to_string();
         let mut row_clone = row.clone();
-        let mut index_delta = 0;      
+        let mut index_delta: i32 = 0;      
         for (i, c) in row.chars().enumerate() {
             if found_percent {
                 if c.is_numeric() {
@@ -145,11 +145,11 @@ impl Labeler {
                     //check if number is in the map and replace
                     if self.label_map.contains_key(&(number_as_string.clone(), *fn_nr)) {
                         let replacement = self.label_map.get(&(number_as_string.clone(), *fn_nr)).unwrap();
-                        row_clone.replace_range((start_index + index_delta)..(end_index + index_delta), replacement);
-                        index_delta += replacement.len();
-                        if index_delta >= (end_index - start_index){
-                            index_delta -= (end_index - start_index);
-                        }
+                        let actual_start_index = (start_index as i32+ index_delta) as u32;
+                        let actual_end_index = (end_index as i32 + index_delta) as u32;
+                        row_clone.replace_range(actual_start_index as usize..actual_end_index as usize, replacement);
+                        index_delta += replacement.len() as i32;
+                        index_delta -= (end_index - start_index as usize) as i32;
                     }
                     number_as_string = "".to_string();
                 }
