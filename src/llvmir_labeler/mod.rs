@@ -1,6 +1,7 @@
 use regex::Regex;
 use std::fs;
-use std::ops::Add;
+use std::fs::File;
+use std::io::Write;
 use std::path::PathBuf;
 use std::collections::HashMap;
 
@@ -39,7 +40,6 @@ impl Labeler {
                 }
                 let new_label = format!(".customlabel{}", delta);
                 let replacement = format!("{}:", new_label);
-                println!("replacing {} with {}", number, new_label);
                 self.label_map.insert((number.to_string(), fn_nr), new_label.to_string());
                 delta += 1;
                 new_row = numbered_block.replace_all(row, replacement).to_string();
@@ -52,7 +52,6 @@ impl Labeler {
                     break;
                 }
                 let mut number_as_u32 :u32 = number.parse().expect("expected number");
-                println!("attempting sub with {} and {}", number_as_u32, delta);
                 number_as_u32 = number_as_u32 - delta;
                 self.label_map.insert((number.to_string(), fn_nr), number_as_u32.to_string());
                 let replacement = format!("%{} =", number_as_u32);
@@ -139,14 +138,24 @@ impl Labeler {
                 if c.is_numeric() {
                     number_as_string = format!("{}{}", number_as_string, c);
                 }
-                else {
-                    end_index = i;
+                if !c.is_numeric() || i == row.len()-1{
+                    if i == row.len()-1{
+                        end_index = i + 1;
+                    }
+                    else{
+                        end_index = i;
+                    }
                     found_percent = false;
                     //check if number is in the map and replace
                     if self.label_map.contains_key(&(number_as_string.clone(), *fn_nr)) {
                         let replacement = self.label_map.get(&(number_as_string.clone(), *fn_nr)).unwrap();
-                        let actual_start_index = (start_index as i32+ index_delta) as usize;
+                        let actual_start_index = (start_index as i32 + index_delta) as usize;
                         let actual_end_index = (end_index as i32 + index_delta) as usize;
+                        if number_as_string.eq("22") {
+                            println!("replacement for 22: {}", replacement);
+                            println!("indices: {} and {}", actual_start_index, actual_end_index);
+                            println!("full row: \n{}", row_clone);
+                        }
                         row_clone.replace_range(actual_start_index..actual_end_index, replacement);
                         index_delta += replacement.len() as i32;
                         index_delta -= (end_index - start_index) as i32;
@@ -163,15 +172,16 @@ impl Labeler {
         return row_clone;
     }
 
-    pub fn label_file(&mut self, path: PathBuf) -> Result<String, String> {
+    pub fn label_file(&mut self, path: &PathBuf, file_name: &str) -> Result<String, String> {
         let dir_read_res = path.read_dir();
-        let validator = Regex::new(r"assembly_reg_ex.ll").unwrap();
+        //let validator = Regex::new(r"assembly_reg_ex.ll").unwrap();
         match dir_read_res {
             Ok(read_dir) => {
                 for file_read_res in read_dir {
                     match file_read_res {
                         Ok(file) => {
-                            if validator.is_match(file.file_name().to_str().unwrap()) {
+                            //if validator.is_match(file.file_name().to_str().unwrap()) {
+                            if file_name.eq(file.file_name().to_str().unwrap()) {
                                 let file_content_read_res = fs::read_to_string(file.path());
                                 if file_content_read_res.is_err() {
                                     return Err(file_content_read_res.unwrap_err().to_string());
@@ -189,5 +199,15 @@ impl Labeler {
             }
             Err(msg) => Err(msg.to_string()),
         }
+    }
+
+    pub fn save_file(&mut self, path: &PathBuf, file_name: &str, file_contents: String) {
+        let file_name_split: Vec<&str> = file_name.split(".").collect();
+        let path_clone = path.clone();
+        let new_name = format!("{}_labeled.{}", path_clone.join(file_name_split[0]).to_str().unwrap(), file_name_split[1]);
+        //let mut file = File::create(new_name).unwrap();
+        //file.write_all(file_contents);
+        //file.write(file_contents);
+        fs::write(new_name, file_contents).unwrap();
     }
 }
