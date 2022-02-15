@@ -151,11 +151,6 @@ impl Labeler {
                         let replacement = self.label_map.get(&(number_as_string.clone(), *fn_nr)).unwrap();
                         let actual_start_index = (start_index as i32 + index_delta) as usize;
                         let actual_end_index = (end_index as i32 + index_delta) as usize;
-                        if number_as_string.eq("22") {
-                            println!("replacement for 22: {}", replacement);
-                            println!("indices: {} and {}", actual_start_index, actual_end_index);
-                            println!("full row: \n{}", row_clone);
-                        }
                         row_clone.replace_range(actual_start_index..actual_end_index, replacement);
                         index_delta += replacement.len() as i32;
                         index_delta -= (end_index - start_index) as i32;
@@ -205,9 +200,6 @@ impl Labeler {
         let file_name_split: Vec<&str> = file_name.split(".").collect();
         let path_clone = path.clone();
         let new_name = format!("{}_labeled.{}", path_clone.join(file_name_split[0]).to_str().unwrap(), file_name_split[1]);
-        //let mut file = File::create(new_name).unwrap();
-        //file.write_all(file_contents);
-        //file.write(file_contents);
         fs::write(new_name, file_contents).unwrap();
     }
 }
