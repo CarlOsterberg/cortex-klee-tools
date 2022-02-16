@@ -1,5 +1,8 @@
 use std::env;
+
+use llvmir_to_m4_cycles::IrToM4;
 mod ktest_parser;
+mod llvmir_to_m4_cycles;
 mod tests;
 mod llvmir_labeler;
 mod block_calculator;
@@ -11,8 +14,8 @@ fn main() {
     dir.push("src");
     dir.push("ktest_parser");
     dir.push("test_cases");
-    dir.push("regexp");
-    let ktests = ktest_parser::read_instr(dir).unwrap();
+    dir.push("getsign");
+    let ktests = llvmir_to_m4_cycles::IrToM4::read_dir(dir);
     for ktest in ktests {
         println!("{:?}",ktest);
     }
@@ -21,7 +24,8 @@ fn main() {
     dir2.push("llvmir_labeler");
     dir2.push("test_cases");
     let mut labeler = llvmir_labeler::Labeler::new();
-    let replaced_string = labeler.label_file(dir2).unwrap();
+    let replaced_string = labeler.label_file(&dir2, "assembly_reg_ex.ll").unwrap();
     println!("{}", replaced_string);
+    labeler.save_file(&dir2, "assembly_reg_ex.ll", replaced_string);
 
 }
