@@ -2,6 +2,7 @@ use std::env;
 mod ktest_parser;
 mod tests;
 mod llvmir_labeler;
+mod block_calculator;
 
 //https://github.com/klee/klee/blob/master/tools/ktest-tool/ktest-tool
 

@@ -55,6 +55,22 @@ mod tests {
         let use_test = "isvdvodsf p %123   inpfisn134vq3rv";
         assert!(use_of_reg.is_match(use_test));
 
+        let lbb = Regex::new(r"^(\s*).LBB[0-9]+_[0-9]+").unwrap();
+        let lbb_test = "               .LBB34_567hjfla sfkjshlakfjhsdaf l23";
+        assert!(lbb.is_match(lbb_test));
+
+        let bb = Regex::new(r"^(\s*)@(\s*)%bb.[0-9]+:").unwrap();
+        let bb_test = "         @       %bb.2:                                @ %.customlabel0";
+        assert!(bb.is_match(bb_test));
+
+        let asm_fn_def = Regex::new(r"^(?P<x>[^.\s]+):").unwrap();
+        let asm_fn_def_test = "-24vt:    afarf";
+        assert!(asm_fn_def.is_match(asm_fn_def_test));
+
+        let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();
+        let asm_instruction_test = " add r1, r2";
+        assert!(asm_instruction.is_match(asm_instruction_test));
+
     }
 
     #[test]    
