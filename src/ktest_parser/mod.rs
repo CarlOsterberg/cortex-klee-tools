@@ -18,7 +18,7 @@ pub struct KtestData {
     objs: Vec<(String, Vec<u8>)>,
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 #[allow(dead_code)]
 pub struct Instructions {
     file_name: String,
@@ -175,6 +175,13 @@ impl Instructions {
                 instr
             }
         )
+    }
+    pub fn getInstructions(self) -> Vec<(String,u32)> {
+        self.instr
+    }
+
+    pub fn getFilename(self) -> String {
+        self.file_name
     }
 }
 
