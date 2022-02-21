@@ -60,7 +60,7 @@ impl CortexM4 {
             CortexM4::Barriers => 1 + b
         }
     }
-    //upper bound on number of cycles for a specific cortex m4 instruction set
+    //lower bound on number of cycles for a specific cortex m4 instruction set
     pub fn getLower(self, n:u32) -> u32 {
         let p = 1;
         match self {
