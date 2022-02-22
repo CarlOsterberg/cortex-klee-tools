@@ -153,44 +153,44 @@ impl IrToM4 {
             //check this more thoroughly
             Some(LlvmIr::GetElementPtr) => IrToM4 {
                 llvm_ir: LlvmIr::GetElementPtr,
-                cortex_wc: vec![CortexM4::Logical],
-                cortex_bc: vec![CortexM4::Logical],
+                cortex_wc: vec![CortexM4::Add],
+                cortex_bc: vec![CortexM4::Add],
             },
             //check this more thoroughly
             Some(LlvmIr::Trunc) => IrToM4 {
                 llvm_ir: LlvmIr::Trunc,
-                cortex_wc: vec![CortexM4::Logical],
-                cortex_bc: vec![CortexM4::Logical],
+                cortex_wc: vec![CortexM4::Extend],
+                cortex_bc: vec![],
             },
             //check this more thoroughly
             Some(LlvmIr::ZExt) => IrToM4 {
                 llvm_ir: LlvmIr::ZExt,
-                cortex_wc: vec![CortexM4::Extend],
-                cortex_bc: vec![CortexM4::Extend],
+                cortex_wc: vec![CortexM4::Shift],
+                cortex_bc: vec![CortexM4::Shift],
             },
             //check this more thoroughly
-            Some(LlvmIr::SExt ) => IrToM4 {
+            Some(LlvmIr::SExt) => IrToM4 {
                 llvm_ir: LlvmIr::SExt,
-                cortex_wc: vec![CortexM4::Extend],
-                cortex_bc: vec![CortexM4::Extend],
+                cortex_wc: vec![CortexM4::Shift],
+                cortex_bc: vec![CortexM4::Shift],
             },
             //check this more thoroughly
-            Some(LlvmIr::IntToPtr ) => IrToM4 {
+            Some(LlvmIr::IntToPtr) => IrToM4 {
                 llvm_ir: LlvmIr::IntToPtr,
-                cortex_wc: vec![CortexM4::Logical],
-                cortex_bc: vec![CortexM4::Logical],
+                cortex_wc: vec![CortexM4::Extend],
+                cortex_bc: vec![],
             },
             //check this more thoroughly
             Some(LlvmIr::PtrToInt) => IrToM4 {
                 llvm_ir: LlvmIr::PtrToInt,
-                cortex_wc: vec![CortexM4::Logical],
-                cortex_bc: vec![CortexM4::Logical],
+                cortex_wc: vec![CortexM4::Extend],
+                cortex_bc: vec![],
             },
             //check this more thoroughly
             Some(LlvmIr::BitCast) => IrToM4 {
                 llvm_ir: LlvmIr::BitCast,
-                cortex_wc: vec![CortexM4::Logical],
-                cortex_bc: vec![CortexM4::Logical],
+                cortex_wc: vec![],
+                cortex_bc: vec![],
             },
             //check this more thoroughly
             Some(LlvmIr::FNeg) => IrToM4 {
@@ -229,7 +229,7 @@ impl IrToM4 {
             Some(LlvmIr::FPTrunc) => IrToM4 {
                 llvm_ir: LlvmIr::FPTrunc,
                 cortex_wc: vec![CortexM4::Extend],
-                cortex_bc: vec![CortexM4::Extend],
+                cortex_bc: vec![],
             },
             //check this more thoroughly
             Some(LlvmIr::FPExt) => IrToM4 {
@@ -281,8 +281,8 @@ impl IrToM4 {
             //check this more thoroughly
             Some(LlvmIr::Fence) => IrToM4 {
                 llvm_ir: LlvmIr::Fence,
-                cortex_wc: vec![CortexM4::Logical],
-                cortex_bc: vec![CortexM4::Logical],
+                cortex_wc: vec![],
+                cortex_bc: vec![],
             },
             //check this more thoroughly
             Some(LlvmIr::InsertElement) => IrToM4 {
@@ -360,7 +360,6 @@ impl IrToM4 {
                         for _ in 0..nmbr {
                             ir_to_m4_vec.push(conv_obj.clone()); 
                         }
-
                     };
                     parsed_vectors.push((instr_obj.getFilename(),ir_to_m4_vec))
                 }
