@@ -52,7 +52,7 @@ mod tests {
 
     #[test]
     fn test_regexes() {
-        let numbered_block = Regex::new(r"(?P<x>[0-9]+):").unwrap();
+        let numbered_block = Regex::new(r"^(\s*)(?P<x>[0-9]+):\D").unwrap();
         let test = "    34:   ";
         assert!(numbered_block.is_match(test));
         let after = numbered_block.replace_all(test, "$x stagge");

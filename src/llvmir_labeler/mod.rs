@@ -21,7 +21,7 @@ impl Labeler {
         let mut fn_nr: u32 = 0;
         let rows: Vec<&str> = file_contents.split("\n").collect();
         let mut new_rows = Vec::new();
-        let numbered_block = Regex::new(r"(?P<x>[0-9]+):\D").unwrap();
+        let numbered_block = Regex::new(r"^(\s*)(?P<x>[0-9]+):\D").unwrap();
         let assignment = Regex::new(r"%(?P<x>[0-9]+)(\s*)=").unwrap();
         let fn_def = Regex::new(r"define").unwrap();
         for row in rows {
@@ -35,7 +35,7 @@ impl Labeler {
             else if numbered_block.is_match(row) {
                 let mut number: String = "".to_string();
                 for cap in numbered_block.captures_iter(row) {
-                    number = cap[1].to_string().clone();
+                    number = cap[2].to_string().clone();
                     break;
                 }
                 let new_label = format!(".customlabel{}", delta);
