@@ -76,13 +76,18 @@ impl BlockCalculator {
         let bb = Regex::new(r"^(\s*)@(\s*)%bb.[0-9]+:").unwrap();
         let asm_fn_def = Regex::new(r"^(?P<x>[^.\s]+):").unwrap();
         let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();
-        let mut current_fn = "";
-        let mut current_block_label = "";
+        let mut current_fn = "".to_string();
+        let mut current_block_label = "initial_fn_block".to_string();
         let mut current_block_nr = -1;
         let rows: Vec<&str> = file_contents.split("\n").collect();
         for row in rows {
             if asm_fn_def.is_match(row) {
-
+                let mut fn_name = "".to_string();
+                for cap in asm_fn_def.captures_iter(row){
+                    fn_name = cap[1].to_string().clone();
+                    break;
+                }
+                current_fn = fn_name;
             }
             else if lbb.is_match(row) {
 
@@ -91,7 +96,7 @@ impl BlockCalculator {
 
             }
             else if asm_instruction.is_match(row){
-                
+
             }
         }
     }

@@ -26,6 +26,6 @@ fn main() {
     let mut labeler = llvmir_labeler::Labeler::new();
     let replaced_string = labeler.label_file(&dir2, "assembly_reg_ex.ll").unwrap();
     println!("{}", replaced_string);
-    labeler.save_file(&dir2, "assembly_reg_ex.ll", replaced_string);
+    labeler.save_file(&dir2, "assembly_sort.ll", replaced_string);
 
 }

@@ -20,15 +20,33 @@
 	.eabi_attribute	18, 4	@ Tag_ABI_PCS_wchar_t
 	.eabi_attribute	14, 0	@ Tag_ABI_PCS_R9_use
 	.file	"Regexp.c"
+	.p2align	1                               @ -- Begin function brtest
+	.type	brtest,%function
+	.code	16                              @ @brtest
+	.thumb_func
+brtest:
+.Lfunc_begin0:
+	.fnstart
+	.cfi_sections .debug_frame
+	.cfi_startproc
+@ %bb.0:                                @ %common.ret
+	subs	r0, #2
+	clz	r0, r0
+	lsrs	r0, r0, #5
+	bx	lr
+.Lfunc_end0:
+	.size	brtest, .Lfunc_end0-brtest
+	.cfi_endproc
+	.fnend
+                                        @ -- End function
 	.p2align	2                               @ -- Begin function match
 	.type	match,%function
 	.code	32                              @ @match
 match:
-.Lfunc_begin0:
+.Lfunc_begin1:
 	.file	1 "/home/isak/Documents/xj/klee-fork/klee/examples/regexp" "Regexp.c"
 	.loc	1 34 0                          @ Regexp.c:34:0
 	.fnstart
-	.cfi_sections .debug_frame
 	.cfi_startproc
 @ %bb.0:
 	@DEBUG_VALUE: match:re <- $r0
@@ -51,26 +69,28 @@ match:
 	.loc	1 35 7 is_stmt 0                @ Regexp.c:35:7
 	cmp	r0, #94
 	@DEBUG_VALUE: match:text <- undef
-	bne	.LBB0_2
+	bne	.LBB1_2
 .Ltmp2:
 @ %bb.1:                                @ %.customlabel0
 	@DEBUG_VALUE: match:re <- $r4
 	.loc	1 36 12 is_stmt 1               @ Regexp.c:36:12
-	ldr	r1, .LCPI0_0
+	ldr	r1, .LCPI1_0
 	.loc	1 36 24 is_stmt 0               @ Regexp.c:36:24
 	add	r0, r4, #1
 	.loc	1 36 12                         @ Regexp.c:36:12
+	bl	matchhere
+	mov	r0, #5
 	pop	{r4, r5, r11, lr}
 .Ltmp3:
 	@DEBUG_VALUE: match:re <- [DW_OP_LLVM_entry_value 1] $r0
-	b	matchhere
-.Ltmp4:
-.LBB0_2:                                @ %.preheader.preheader
-	@DEBUG_VALUE: match:re <- $r4
 	.loc	1 0 12                          @ Regexp.c:0:12
-	ldr	r5, .LCPI0_0
+	b	brtest
+.Ltmp4:
+.LBB1_2:                                @ %.preheader.preheader
+	@DEBUG_VALUE: match:re <- $r4
+	ldr	r5, .LCPI1_0
 .Ltmp5:
-.LBB0_3:                                @ %.preheader
+.LBB1_3:                                @ %.preheader
                                         @ =>This Inner Loop Header: Depth=1
 	@DEBUG_VALUE: match:re <- $r4
 	@DEBUG_VALUE: match:text <- $r5
@@ -81,10 +101,10 @@ match:
 .Ltmp6:
 	.loc	1 38 9 is_stmt 0                @ Regexp.c:38:9
 	cmp	r0, #0
-	bne	.LBB0_5
+	bne	.LBB1_5
 .Ltmp7:
 @ %bb.4:                                @ %.customlabel1
-                                        @   in Loop: Header=BB0_3 Depth=1
+                                        @   in Loop: Header=BB1_3 Depth=1
 	@DEBUG_VALUE: match:text <- $r5
 	@DEBUG_VALUE: match:re <- $r4
 	.loc	1 40 12 is_stmt 1               @ Regexp.c:40:12
@@ -93,9 +113,9 @@ match:
 	@DEBUG_VALUE: match:text <- $r5
 	.loc	1 40 3 is_stmt 0                @ Regexp.c:40:3
 	cmp	r0, #0
-	bne	.LBB0_3
+	bne	.LBB1_3
 .Ltmp9:
-.LBB0_5:                                @ %.loopexit
+.LBB1_5:                                @ %.loopexit
 	@DEBUG_VALUE: match:text <- $r5
 	@DEBUG_VALUE: match:re <- $r4
 	.loc	1 42 1 is_stmt 1                @ Regexp.c:42:1
@@ -107,10 +127,10 @@ match:
 	.p2align	2
 @ %bb.6:
 	.loc	1 0 1 is_stmt 0                 @ Regexp.c:0:1
-.LCPI0_0:
+.LCPI1_0:
 	.long	.L.str.1
-.Lfunc_end0:
-	.size	match, .Lfunc_end0-match
+.Lfunc_end1:
+	.size	match, .Lfunc_end1-match
 	.cfi_endproc
 	.fnend
                                         @ -- End function
@@ -118,7 +138,7 @@ match:
 	.type	matchhere,%function
 	.code	32                              @ @matchhere
 matchhere:
-.Lfunc_begin1:
+.Lfunc_begin2:
 	.loc	1 22 0 is_stmt 1                @ Regexp.c:22:0
 	.fnstart
 	.cfi_startproc
@@ -147,7 +167,7 @@ matchhere:
 .Ltmp15:
 	.loc	1 23 7                          @ Regexp.c:23:7
 	cmp	r2, #0
-	beq	.LBB1_7
+	beq	.LBB2_7
 .Ltmp16:
 @ %bb.1:                                @ %.lr.ph.preheader
 	@DEBUG_VALUE: matchhere:re <- $r1
@@ -155,7 +175,7 @@ matchhere:
 	.loc	1 25 7 is_stmt 1                @ Regexp.c:25:7
 	add	lr, r1, #1
 .Ltmp17:
-.LBB1_2:                                @ %.lr.ph
+.LBB2_2:                                @ %.lr.ph
                                         @ =>This Inner Loop Header: Depth=1
 	@DEBUG_VALUE: matchhere:re <- [DW_OP_LLVM_arg 0, DW_OP_consts 1, DW_OP_LLVM_arg 0, DW_OP_plus, DW_OP_minus, DW_OP_LLVM_arg 0, DW_OP_plus, DW_OP_stack_value] undef
 	@DEBUG_VALUE: matchhere:text <- $r12
@@ -164,27 +184,27 @@ matchhere:
 .Ltmp18:
 	.loc	1 25 7                          @ Regexp.c:25:7
 	cmp	r3, #42
-	beq	.LBB1_8
+	beq	.LBB2_8
 .Ltmp19:
 @ %bb.3:                                @ %.customlabel1
-                                        @   in Loop: Header=BB1_2 Depth=1
+                                        @   in Loop: Header=BB2_2 Depth=1
 	@DEBUG_VALUE: matchhere:text <- $r12
 	.loc	1 27 20 is_stmt 1               @ Regexp.c:27:20
 	cmp	r2, #36
 	cmpeq	r3, #0
-	beq	.LBB1_9
+	beq	.LBB2_9
 .Ltmp20:
 @ %bb.4:                                @ %.customlabel3
-                                        @   in Loop: Header=BB1_2 Depth=1
+                                        @   in Loop: Header=BB2_2 Depth=1
 	@DEBUG_VALUE: matchhere:text <- $r12
 	.loc	1 29 7                          @ Regexp.c:29:7
 	ldrb	r1, [r12]
 	.loc	1 29 19 is_stmt 0               @ Regexp.c:29:19
 	cmp	r1, #0
-	beq	.LBB1_7
+	beq	.LBB2_7
 .Ltmp21:
 @ %bb.5:                                @ %.customlabel4
-                                        @   in Loop: Header=BB1_2 Depth=1
+                                        @   in Loop: Header=BB2_2 Depth=1
 	@DEBUG_VALUE: matchhere:text <- $r12
 	.loc	1 0 19                          @ Regexp.c:0:19
 	subs	r1, r2, r1
@@ -197,10 +217,10 @@ matchhere:
 	@DEBUG_VALUE: matchhere:re <- [DW_OP_LLVM_arg 0, DW_OP_consts 1, DW_OP_LLVM_arg 0, DW_OP_plus, DW_OP_minus, DW_OP_consts 1, DW_OP_LLVM_arg 0, DW_OP_plus, DW_OP_plus, DW_OP_stack_value] undef
 	.loc	1 29 34                         @ Regexp.c:29:34
 	tst	r2, r1
-	bne	.LBB1_7
+	bne	.LBB2_7
 .Ltmp23:
 @ %bb.6:                                @ %.customlabel4
-                                        @   in Loop: Header=BB1_2 Depth=1
+                                        @   in Loop: Header=BB2_2 Depth=1
 	@DEBUG_VALUE: matchhere:text <- $r12
 	.loc	1 0 34                          @ Regexp.c:0:34
 	add	lr, lr, #1
@@ -209,13 +229,13 @@ matchhere:
 	.loc	1 29 34                         @ Regexp.c:29:34
 	cmp	r3, #0
 	mov	r2, r3
-	bne	.LBB1_2
+	bne	.LBB2_2
 .Ltmp25:
-.LBB1_7:                                @ %.loopexit
+.LBB2_7:                                @ %.loopexit
 	.loc	1 32 1 is_stmt 1                @ Regexp.c:32:1
 	pop	{r11, lr}
 	mov	pc, lr
-.LBB1_8:                                @ %.customlabel0
+.LBB2_8:                                @ %.customlabel0
 .Ltmp26:
 	@DEBUG_VALUE: matchhere:text <- $r12
 	.loc	1 26 22                         @ Regexp.c:26:22
@@ -226,7 +246,7 @@ matchhere:
 	pop	{r11, lr}
 	b	matchstar
 .Ltmp27:
-.LBB1_9:                                @ %.customlabel2
+.LBB2_9:                                @ %.customlabel2
 	@DEBUG_VALUE: matchhere:text <- $r12
 	.loc	1 28 12 is_stmt 1               @ Regexp.c:28:12
 	ldrb	r0, [r12]
@@ -238,8 +258,8 @@ matchhere:
 	pop	{r11, lr}
 	mov	pc, lr
 .Ltmp29:
-.Lfunc_end1:
-	.size	matchhere, .Lfunc_end1-matchhere
+.Lfunc_end2:
+	.size	matchhere, .Lfunc_end2-matchhere
 	.cfi_endproc
 	.fnend
                                         @ -- End function
@@ -248,7 +268,7 @@ matchhere:
 	.type	main,%function
 	.code	32                              @ @main
 main:
-.Lfunc_begin2:
+.Lfunc_begin3:
 	.loc	1 51 0                          @ Regexp.c:51:0
 	.fnstart
 	.cfi_startproc
@@ -267,7 +287,7 @@ main:
 	sub	sp, sp, #16
 .Ltmp30:
 	.loc	1 56 3 prologue_end             @ Regexp.c:56:3
-	ldr	r0, .LCPI2_0
+	ldr	r0, .LCPI3_0
 	add	r4, sp, #9
 	mov	r2, #7
 	mov	r3, #0
@@ -286,10 +306,10 @@ main:
 	.p2align	2
 @ %bb.1:
 	.loc	1 0 3 is_stmt 0                 @ Regexp.c:0:3
-.LCPI2_0:
+.LCPI3_0:
 	.long	.L.str
-.Lfunc_end2:
-	.size	main, .Lfunc_end2-main
+.Lfunc_end3:
+	.size	main, .Lfunc_end3-main
 	.cfi_endproc
 	.fnend
                                         @ -- End function
@@ -297,7 +317,7 @@ main:
 	.type	matchstar,%function
 	.code	32                              @ @matchstar
 matchstar:
-.Lfunc_begin3:
+.Lfunc_begin4:
 	.loc	1 14 0 is_stmt 1                @ Regexp.c:14:0
 	.fnstart
 	.cfi_startproc
@@ -328,9 +348,9 @@ matchstar:
 	@DEBUG_VALUE: matchstar:c <- $r0
 	.loc	1 15 3 prologue_end             @ Regexp.c:15:3
 	cmp	r0, #46
-	bne	.LBB3_4
+	bne	.LBB4_4
 .Ltmp34:
-.LBB3_1:                                @ %.split.us
+.LBB4_1:                                @ %.split.us
                                         @ =>This Inner Loop Header: Depth=1
 	@DEBUG_VALUE: matchstar:re <- $r5
 	@DEBUG_VALUE: matchstar:text <- $r4
@@ -344,20 +364,20 @@ matchstar:
 .Ltmp36:
 	.loc	1 16 9 is_stmt 0                @ Regexp.c:16:9
 	cmp	r0, #0
-	bne	.LBB3_9
+	bne	.LBB4_9
 .Ltmp37:
 @ %bb.2:                                @ %.customlabel0
-                                        @   in Loop: Header=BB3_1 Depth=1
+                                        @   in Loop: Header=BB4_1 Depth=1
 	@DEBUG_VALUE: matchstar:re <- $r5
 	@DEBUG_VALUE: matchstar:text <- $r4
 	.loc	1 18 12 is_stmt 1               @ Regexp.c:18:12
 	ldrb	r0, [r4]
 	.loc	1 18 26 is_stmt 0               @ Regexp.c:18:26
 	cmp	r0, #0
-	beq	.LBB3_10
+	beq	.LBB4_10
 .Ltmp38:
 @ %bb.3:                                @ %.customlabel1
-                                        @   in Loop: Header=BB3_1 Depth=1
+                                        @   in Loop: Header=BB4_1 Depth=1
 	@DEBUG_VALUE: matchstar:re <- $r5
 	@DEBUG_VALUE: matchstar:text <- $r4
 	.loc	1 18 35                         @ Regexp.c:18:35
@@ -365,9 +385,9 @@ matchstar:
 .Ltmp39:
 	@DEBUG_VALUE: matchstar:text <- $r4
 	.loc	1 0 35                          @ Regexp.c:0:35
-	b	.LBB3_1
+	b	.LBB4_1
 .Ltmp40:
-.LBB3_4:
+.LBB4_4:
 	@DEBUG_VALUE: matchstar:re <- $r5
 	@DEBUG_VALUE: matchstar:text <- $r4
 	@DEBUG_VALUE: matchstar:c <- $r0
@@ -375,7 +395,7 @@ matchstar:
 .Ltmp41:
 	@DEBUG_VALUE: matchstar:c <- $r6
 	@DEBUG_VALUE: matchstar:c <- $r6
-.LBB3_5:                                @ %..split_crit_edge
+.LBB4_5:                                @ %..split_crit_edge
                                         @ =>This Inner Loop Header: Depth=1
 	@DEBUG_VALUE: matchstar:c <- $r6
 	@DEBUG_VALUE: matchstar:re <- $r5
@@ -388,10 +408,10 @@ matchstar:
 .Ltmp42:
 	.loc	1 16 9 is_stmt 0                @ Regexp.c:16:9
 	cmp	r0, #0
-	bne	.LBB3_9
+	bne	.LBB4_9
 .Ltmp43:
 @ %bb.6:                                @ %.customlabel2
-                                        @   in Loop: Header=BB3_5 Depth=1
+                                        @   in Loop: Header=BB4_5 Depth=1
 	@DEBUG_VALUE: matchstar:c <- $r6
 	@DEBUG_VALUE: matchstar:re <- $r5
 	@DEBUG_VALUE: matchstar:text <- $r4
@@ -400,10 +420,10 @@ matchstar:
 	mov	r0, #0
 	.loc	1 18 26 is_stmt 0               @ Regexp.c:18:26
 	cmp	r1, #0
-	beq	.LBB3_8
+	beq	.LBB4_8
 .Ltmp44:
 @ %bb.7:                                @ %.customlabel3
-                                        @   in Loop: Header=BB3_5 Depth=1
+                                        @   in Loop: Header=BB4_5 Depth=1
 	@DEBUG_VALUE: matchstar:c <- $r6
 	@DEBUG_VALUE: matchstar:re <- $r5
 	@DEBUG_VALUE: matchstar:text <- $r4
@@ -413,9 +433,9 @@ matchstar:
 	@DEBUG_VALUE: matchstar:text <- $r4
 	.loc	1 18 3                          @ Regexp.c:18:3
 	cmp	r1, r6
-	beq	.LBB3_5
+	beq	.LBB4_5
 .Ltmp46:
-.LBB3_8:                                @ %.critedge
+.LBB4_8:                                @ %.critedge
 	@DEBUG_VALUE: matchstar:c <- $r6
 	@DEBUG_VALUE: matchstar:re <- $r5
 	@DEBUG_VALUE: matchstar:text <- $r4
@@ -426,7 +446,7 @@ matchstar:
 	@DEBUG_VALUE: matchstar:re <- [DW_OP_LLVM_entry_value 1] $r1
 	mov	pc, lr
 .Ltmp48:
-.LBB3_9:
+.LBB4_9:
 	@DEBUG_VALUE: matchstar:re <- $r5
 	@DEBUG_VALUE: matchstar:text <- $r4
 	.loc	1 0 1 is_stmt 0                 @ Regexp.c:0:1
@@ -437,7 +457,7 @@ matchstar:
 	@DEBUG_VALUE: matchstar:re <- [DW_OP_LLVM_entry_value 1] $r1
 	mov	pc, lr
 .Ltmp50:
-.LBB3_10:
+.LBB4_10:
 	@DEBUG_VALUE: matchstar:re <- $r5
 	@DEBUG_VALUE: matchstar:text <- $r4
 	.loc	1 0 1                           @ Regexp.c:0:1
@@ -449,8 +469,8 @@ matchstar:
 	@DEBUG_VALUE: matchstar:re <- [DW_OP_LLVM_entry_value 1] $r1
 	mov	pc, lr
 .Ltmp52:
-.Lfunc_end3:
-	.size	matchstar, .Lfunc_end3-matchstar
+.Lfunc_end4:
+	.size	matchstar, .Lfunc_end4-matchstar
 	.cfi_endproc
 	.fnend
                                         @ -- End function
@@ -467,27 +487,27 @@ matchstar:
 
 	.section	.debug_loc,"",%progbits
 .Ldebug_loc0:
-	.long	.Lfunc_begin0-.Lfunc_begin0
-	.long	.Ltmp0-.Lfunc_begin0
+	.long	.Lfunc_begin1-.Lfunc_begin1
+	.long	.Ltmp0-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	80                              @ DW_OP_reg0
-	.long	.Ltmp0-.Lfunc_begin0
-	.long	.Ltmp3-.Lfunc_begin0
+	.long	.Ltmp0-.Lfunc_begin1
+	.long	.Ltmp3-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	84                              @ DW_OP_reg4
-	.long	.Ltmp3-.Lfunc_begin0
-	.long	.Ltmp4-.Lfunc_begin0
+	.long	.Ltmp3-.Lfunc_begin1
+	.long	.Ltmp4-.Lfunc_begin1
 	.short	4                               @ Loc expr size
 	.byte	243                             @ DW_OP_GNU_entry_value
 	.byte	1                               @ 1
 	.byte	80                              @ DW_OP_reg0
 	.byte	159                             @ DW_OP_stack_value
-	.long	.Ltmp4-.Lfunc_begin0
-	.long	.Ltmp10-.Lfunc_begin0
+	.long	.Ltmp4-.Lfunc_begin1
+	.long	.Ltmp10-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	84                              @ DW_OP_reg4
-	.long	.Ltmp10-.Lfunc_begin0
-	.long	.Ltmp11-.Lfunc_begin0
+	.long	.Ltmp10-.Lfunc_begin1
+	.long	.Ltmp11-.Lfunc_begin1
 	.short	4                               @ Loc expr size
 	.byte	243                             @ DW_OP_GNU_entry_value
 	.byte	1                               @ 1
@@ -496,60 +516,60 @@ matchstar:
 	.long	0
 	.long	0
 .Ldebug_loc1:
-	.long	.Ltmp5-.Lfunc_begin0
-	.long	.Ltmp10-.Lfunc_begin0
+	.long	.Ltmp5-.Lfunc_begin1
+	.long	.Ltmp10-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	85                              @ DW_OP_reg5
 	.long	0
 	.long	0
 .Ldebug_loc2:
-	.long	.Lfunc_begin1-.Lfunc_begin0
-	.long	.Ltmp14-.Lfunc_begin0
+	.long	.Lfunc_begin2-.Lfunc_begin1
+	.long	.Ltmp14-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	80                              @ DW_OP_reg0
-	.long	.Ltmp14-.Lfunc_begin0
-	.long	.Ltmp17-.Lfunc_begin0
+	.long	.Ltmp14-.Lfunc_begin1
+	.long	.Ltmp17-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	81                              @ DW_OP_reg1
 	.long	0
 	.long	0
 .Ldebug_loc3:
-	.long	.Lfunc_begin1-.Lfunc_begin0
-	.long	.Ltmp13-.Lfunc_begin0
+	.long	.Lfunc_begin2-.Lfunc_begin1
+	.long	.Ltmp13-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	81                              @ DW_OP_reg1
-	.long	.Ltmp13-.Lfunc_begin0
-	.long	.Ltmp24-.Lfunc_begin0
+	.long	.Ltmp13-.Lfunc_begin1
+	.long	.Ltmp24-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	92                              @ DW_OP_reg12
-	.long	.Ltmp26-.Lfunc_begin0
-	.long	.Lfunc_end1-.Lfunc_begin0
+	.long	.Ltmp26-.Lfunc_begin1
+	.long	.Lfunc_end2-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	92                              @ DW_OP_reg12
 	.long	0
 	.long	0
 .Ldebug_loc4:
-	.long	.Lfunc_begin3-.Lfunc_begin0
-	.long	.Ltmp34-.Lfunc_begin0
+	.long	.Lfunc_begin4-.Lfunc_begin1
+	.long	.Ltmp34-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	80                              @ DW_OP_reg0
-	.long	.Ltmp35-.Lfunc_begin0
-	.long	.Ltmp37-.Lfunc_begin0
+	.long	.Ltmp35-.Lfunc_begin1
+	.long	.Ltmp37-.Lfunc_begin1
 	.short	4                               @ Loc expr size
 	.byte	243                             @ DW_OP_GNU_entry_value
 	.byte	1                               @ 1
 	.byte	80                              @ DW_OP_reg0
 	.byte	159                             @ DW_OP_stack_value
-	.long	.Ltmp40-.Lfunc_begin0
-	.long	.Ltmp41-.Lfunc_begin0
+	.long	.Ltmp40-.Lfunc_begin1
+	.long	.Ltmp41-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	80                              @ DW_OP_reg0
-	.long	.Ltmp41-.Lfunc_begin0
-	.long	.Ltmp47-.Lfunc_begin0
+	.long	.Ltmp41-.Lfunc_begin1
+	.long	.Ltmp47-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	86                              @ DW_OP_reg6
-	.long	.Ltmp47-.Lfunc_begin0
-	.long	.Ltmp48-.Lfunc_begin0
+	.long	.Ltmp47-.Lfunc_begin1
+	.long	.Ltmp48-.Lfunc_begin1
 	.short	4                               @ Loc expr size
 	.byte	243                             @ DW_OP_GNU_entry_value
 	.byte	1                               @ 1
@@ -558,38 +578,38 @@ matchstar:
 	.long	0
 	.long	0
 .Ldebug_loc5:
-	.long	.Lfunc_begin3-.Lfunc_begin0
-	.long	.Ltmp33-.Lfunc_begin0
+	.long	.Lfunc_begin4-.Lfunc_begin1
+	.long	.Ltmp33-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	81                              @ DW_OP_reg1
-	.long	.Ltmp33-.Lfunc_begin0
-	.long	.Ltmp47-.Lfunc_begin0
+	.long	.Ltmp33-.Lfunc_begin1
+	.long	.Ltmp47-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	85                              @ DW_OP_reg5
-	.long	.Ltmp47-.Lfunc_begin0
-	.long	.Ltmp48-.Lfunc_begin0
+	.long	.Ltmp47-.Lfunc_begin1
+	.long	.Ltmp48-.Lfunc_begin1
 	.short	4                               @ Loc expr size
 	.byte	243                             @ DW_OP_GNU_entry_value
 	.byte	1                               @ 1
 	.byte	81                              @ DW_OP_reg1
 	.byte	159                             @ DW_OP_stack_value
-	.long	.Ltmp48-.Lfunc_begin0
-	.long	.Ltmp49-.Lfunc_begin0
+	.long	.Ltmp48-.Lfunc_begin1
+	.long	.Ltmp49-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	85                              @ DW_OP_reg5
-	.long	.Ltmp49-.Lfunc_begin0
-	.long	.Ltmp50-.Lfunc_begin0
+	.long	.Ltmp49-.Lfunc_begin1
+	.long	.Ltmp50-.Lfunc_begin1
 	.short	4                               @ Loc expr size
 	.byte	243                             @ DW_OP_GNU_entry_value
 	.byte	1                               @ 1
 	.byte	81                              @ DW_OP_reg1
 	.byte	159                             @ DW_OP_stack_value
-	.long	.Ltmp50-.Lfunc_begin0
-	.long	.Ltmp51-.Lfunc_begin0
+	.long	.Ltmp50-.Lfunc_begin1
+	.long	.Ltmp51-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	85                              @ DW_OP_reg5
-	.long	.Ltmp51-.Lfunc_begin0
-	.long	.Lfunc_end3-.Lfunc_begin0
+	.long	.Ltmp51-.Lfunc_begin1
+	.long	.Lfunc_end4-.Lfunc_begin1
 	.short	4                               @ Loc expr size
 	.byte	243                             @ DW_OP_GNU_entry_value
 	.byte	1                               @ 1
@@ -598,20 +618,20 @@ matchstar:
 	.long	0
 	.long	0
 .Ldebug_loc6:
-	.long	.Lfunc_begin3-.Lfunc_begin0
-	.long	.Ltmp32-.Lfunc_begin0
+	.long	.Lfunc_begin4-.Lfunc_begin1
+	.long	.Ltmp32-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	82                              @ DW_OP_reg2
-	.long	.Ltmp32-.Lfunc_begin0
-	.long	.Ltmp47-.Lfunc_begin0
+	.long	.Ltmp32-.Lfunc_begin1
+	.long	.Ltmp47-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	84                              @ DW_OP_reg4
-	.long	.Ltmp48-.Lfunc_begin0
-	.long	.Ltmp49-.Lfunc_begin0
+	.long	.Ltmp48-.Lfunc_begin1
+	.long	.Ltmp49-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	84                              @ DW_OP_reg4
-	.long	.Ltmp50-.Lfunc_begin0
-	.long	.Ltmp51-.Lfunc_begin0
+	.long	.Ltmp50-.Lfunc_begin1
+	.long	.Ltmp51-.Lfunc_begin1
 	.short	1                               @ Loc expr size
 	.byte	84                              @ DW_OP_reg4
 	.long	0
@@ -790,11 +810,11 @@ matchstar:
 	.long	.Linfo_string1                  @ DW_AT_name
 	.long	.Lline_table_start0             @ DW_AT_stmt_list
 	.long	.Linfo_string2                  @ DW_AT_comp_dir
-	.long	.Lfunc_begin0                   @ DW_AT_low_pc
-	.long	.Lfunc_end3-.Lfunc_begin0       @ DW_AT_high_pc
+	.long	.Lfunc_begin1                   @ DW_AT_low_pc
+	.long	.Lfunc_end4-.Lfunc_begin1       @ DW_AT_high_pc
 	.byte	2                               @ Abbrev [2] 0x26:0x34 DW_TAG_subprogram
-	.long	.Lfunc_begin0                   @ DW_AT_low_pc
-	.long	.Lfunc_end0-.Lfunc_begin0       @ DW_AT_high_pc
+	.long	.Lfunc_begin1                   @ DW_AT_low_pc
+	.long	.Lfunc_end1-.Lfunc_begin1       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
 	.byte	91
 	.long	.Linfo_string3                  @ DW_AT_name
@@ -817,8 +837,8 @@ matchstar:
 	.long	252                             @ DW_AT_type
 	.byte	0                               @ End Of Children Mark
 	.byte	4                               @ Abbrev [4] 0x5a:0x34 DW_TAG_subprogram
-	.long	.Lfunc_begin1                   @ DW_AT_low_pc
-	.long	.Lfunc_end1-.Lfunc_begin1       @ DW_AT_high_pc
+	.long	.Lfunc_begin2                   @ DW_AT_low_pc
+	.long	.Lfunc_end2-.Lfunc_begin2       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
 	.byte	91
 	.long	.Linfo_string5                  @ DW_AT_name
@@ -840,8 +860,8 @@ matchstar:
 	.long	252                             @ DW_AT_type
 	.byte	0                               @ End Of Children Mark
 	.byte	5                               @ Abbrev [5] 0x8e:0x24 DW_TAG_subprogram
-	.long	.Lfunc_begin2                   @ DW_AT_low_pc
-	.long	.Lfunc_end2-.Lfunc_begin2       @ DW_AT_high_pc
+	.long	.Lfunc_begin3                   @ DW_AT_low_pc
+	.long	.Lfunc_end3-.Lfunc_begin3       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
 	.byte	91
 	.long	.Linfo_string6                  @ DW_AT_name
@@ -859,8 +879,8 @@ matchstar:
 	.long	264                             @ DW_AT_type
 	.byte	0                               @ End Of Children Mark
 	.byte	4                               @ Abbrev [4] 0xb2:0x43 DW_TAG_subprogram
-	.long	.Lfunc_begin3                   @ DW_AT_low_pc
-	.long	.Lfunc_end3-.Lfunc_begin3       @ DW_AT_high_pc
+	.long	.Lfunc_begin4                   @ DW_AT_low_pc
+	.long	.Lfunc_end4-.Lfunc_begin4       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
 	.byte	91
 	.long	.Linfo_string7                  @ DW_AT_name
