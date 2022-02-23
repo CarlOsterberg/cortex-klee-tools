@@ -17,6 +17,7 @@ pub struct Block {
 pub struct BlockCalculator {
     //(fn_nr, blk_nr) -> Block
     block_map: HashMap<(i32, i32), Block>,
+    fn_map: HashMap<String, i32>,
     conditional_branch_instructions: HashSet<String>,
     unconditional_branch_instructions: HashSet<String>,
     other_branch_instructions: HashSet<String>,
@@ -66,6 +67,7 @@ impl BlockCalculator {
     pub fn new() -> BlockCalculator {
         BlockCalculator {
             block_map: HashMap::new(),
+            fn_map: HashMap::new(),
             conditional_branch_instructions: init_conditional_branch_instructions(),
             unconditional_branch_instructions: init_unconditional_branch_instructions(),
             other_branch_instructions: init_other_branch_instructions(),
@@ -94,6 +96,7 @@ impl BlockCalculator {
                 }
                 current_fn = fn_name;
                 current_fn_nr += 1;
+                self.fn_map.insert(current_fn.clone(), current_fn_nr);
                 current_block_nr = -1;
             }
             else if lbb.is_match(row) {
@@ -230,7 +233,9 @@ impl BlockCalculator {
                                 unconditional_block = true;
                             }
                             else {
-
+                                let callee_name = split[1].to_string();
+                                let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
+                                old_block.calls.push(callee_name);
                             }
                         }
                     }
