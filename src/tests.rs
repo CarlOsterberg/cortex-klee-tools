@@ -51,6 +51,16 @@ mod tests {
     }
 
     #[test]
+    fn test_split() {
+        let input = "        bl              match       ";
+        let split: Vec<&str> = input.split_whitespace().collect();
+        println!("splits are:");
+        for s in split {
+            println!("{}", s);
+        }
+    }
+
+    #[test]
     fn test_regexes() {
         let numbered_block = Regex::new(r"^(\s*)(?P<x>[0-9]+):\D").unwrap();
         let test = "    34:   ";
@@ -73,11 +83,15 @@ mod tests {
         let use_test = "isvdvodsf p %123   inpfisn134vq3rv";
         assert!(use_of_reg.is_match(use_test));
 
-        let lbb = Regex::new(r"^(\s*).LBB[0-9]+_[0-9]+").unwrap();
+        let lbb = Regex::new(r"^(\s*).LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
         let lbb_test = "               .LBB34_567hjfla sfkjshlakfjhsdaf l23";
         assert!(lbb.is_match(lbb_test));
 
-        let bb = Regex::new(r"^(\s*)@(\s*)%bb.[0-9]+:").unwrap();
+        let lbb_use = Regex::new(r".LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
+        let lbb_use_test = "     bne        .LBB234_1231    ";
+        assert!(lbb_use.is_match(lbb_use_test));
+
+        let bb = Regex::new(r"^(\s*)@(\s*)%bb.(?P<x>[0-9]+):").unwrap();
         let bb_test = "         @       %bb.2:                                @ %.customlabel0";
         assert!(bb.is_match(bb_test));
 
@@ -116,6 +130,10 @@ mod tests {
         let block_label = Regex::new(r"@(\s*)%(?P<x>[^:]+)(\s)*$").unwrap();
         let block_label_test = "@ %bb.3:                               @ %.customlabel1        ";
         assert!(block_label.is_match(block_label_test));
+
+        let fn_end = Regex::new(r"^(\s*).fnend").unwrap();
+        let fn_end_test = "          .fnend";
+        assert!(fn_end.is_match(fn_end_test));
     }
 
     #[test]    
