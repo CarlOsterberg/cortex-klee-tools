@@ -1,4 +1,5 @@
 use regex::Regex;
+use std::fmt::Result;
 use std::fs;
 use std::ops::Add;
 use std::path::PathBuf;
@@ -75,7 +76,7 @@ impl BlockCalculator {
 
     }
 
-    pub fn build_map_first_pass(&mut self, file_contents: String) {
+    pub fn build_map_first_pass(&mut self, file_contents: &String) {
         let lbb = Regex::new(r"^(\s*).LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
         let bb = Regex::new(r"^(\s*)@(\s*)%bb.(?P<x>[0-9]+):").unwrap();
         let asm_fn_def = Regex::new(r"^(?P<x>[^.\s]+):").unwrap();
@@ -153,13 +154,14 @@ impl BlockCalculator {
         }
     }
 
-    pub fn build_map_second_pass(&mut self, file_contents: String) {
+    pub fn build_map_second_pass(&mut self, file_contents: &String) {
         let lbb = Regex::new(r"^(\s*).LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
         let lbb_use = Regex::new(r".LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
         let bb = Regex::new(r"^(\s*)@(\s*)%bb.(?P<x>[0-9]+):").unwrap();
         let asm_fn_def = Regex::new(r"^(?P<x>[^.\s]+):").unwrap();
         let block_label = Regex::new(r"@(\s*)%(?P<x>[^:]+)(\s)*$").unwrap();
         let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();
+        let move_lr_to_pc = Regex::new(r"^(\s*)mov(\s*)pc(\s*),(\s*)lr").unwrap();
         let mut unconditional_block = false;
         let mut current_fn = "".to_string();
         let mut current_block_label = "initial_fn_block".to_string();
@@ -180,7 +182,7 @@ impl BlockCalculator {
             }
             else if lbb.is_match(row) {
                 if !unconditional_block && current_block_nr >= 0{
-                    let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr + 1)).unwrap();
+                    let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
                     old_block.successors.push((current_fn_nr, current_block_nr + 1));
                 }
                 current_block_nr += 1;
@@ -194,7 +196,7 @@ impl BlockCalculator {
             }
             else if bb.is_match(row) {
                 if !unconditional_block && current_block_nr >= 0{
-                    let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr + 1)).unwrap();
+                    let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
                     old_block.successors.push((current_fn_nr, current_block_nr + 1));
                 }
                 current_block_nr += 1;
@@ -208,7 +210,7 @@ impl BlockCalculator {
             }
             else if (asm_instruction.is_match(row)) {
                 for cap in asm_instruction.captures_iter(row){
-                    if self.conditional_branch_instructions.contains(&cap[1].to_string()){
+                    if self.conditional_branch_instructions.contains(&cap[2].to_string()){
                         let lbb_split: Vec<&str> = row.split("LBB").collect();
                         let nr_split: Vec<&str> = lbb_split[1].split("_").collect();
                         let b_fn_nr = nr_split[0].parse().expect("expected number in LBB target");
@@ -216,7 +218,7 @@ impl BlockCalculator {
                         let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
                         old_block.successors.push((b_fn_nr, b_blk_nr));
                     }
-                    else if self.unconditional_branch_instructions.contains(&cap[1].to_string()){
+                    else if self.unconditional_branch_instructions.contains(&cap[2].to_string()){
                         if lbb_use.is_match(row) {
                             let lbb_split: Vec<&str> = row.split("LBB").collect();
                             let nr_split: Vec<&str> = lbb_split[1].split("_").collect();
@@ -242,10 +244,61 @@ impl BlockCalculator {
                     else if self.other_branch_instructions.contains(&cap[1].to_string()){
                         panic!("unimplemented");
                     }
+                    else if move_lr_to_pc.is_match(row) {
+                        unconditional_block = true;
+                    }
                     break;
                 }
             }
             
+        }
+    }
+
+    pub fn analyze_file(&mut self, path: &PathBuf, file_name: &str) {
+        let dir_read_res = path.read_dir();
+        match dir_read_res {
+            Ok(read_dir) => {
+                for file_read_res in read_dir {
+                    match file_read_res {
+                        Ok(file) => {
+                            if file_name.eq(file.file_name().to_str().unwrap()) {
+                                let file_content_read_res = fs::read_to_string(file.path());
+                                if file_content_read_res.is_err() {
+                                    panic!("{}", file_content_read_res.unwrap_err().to_string());
+                                }
+                                let x = file_content_read_res.unwrap();
+                                self.build_map_first_pass(&x);
+                                self.build_map_second_pass(&x);
+                                self.print_maps();
+                                return;
+                            }
+                        }
+                        Err(msg) => panic!("{}", msg.to_string()),
+                    }
+                }
+                panic!("file not found");
+            }
+            Err(msg) => panic!("{}", msg.to_string()),
+        }
+    }
+
+    pub fn print_maps(&mut self){
+        for (key, value) in &self.block_map {
+            println!("map key is ({}, {})", key.0, key.1);
+            if value.successors.len() > 0 {
+                for s in &value.successors {
+                    println!("successor: ({}, {})", s.0, s.1);
+                }
+            }
+            if value.calls.len() > 0 {
+                for c in &value.calls {
+                    println!("call: {}", c);
+                }
+            }
+        }
+        println!("fn map:");
+        for (key, value) in &self.fn_map {
+            println!("entry: {}, {}", key, value);
         }
     }
 }

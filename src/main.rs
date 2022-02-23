@@ -25,7 +25,14 @@ fn main() {
     dir2.push("test_cases");
     let mut labeler = llvmir_labeler::Labeler::new();
     let replaced_string = labeler.label_file(&dir2, "assembly_sort.ll").unwrap();
-    println!("{}", replaced_string);
+    //println!("{}", replaced_string);
     labeler.save_file(&dir2, "assembly_sort.ll", replaced_string);
+
+    let mut dir3 = env::current_dir().unwrap();
+    dir3.push("src");
+    dir3.push("llvmir_labeler");
+    dir3.push("test_cases");
+    let mut bc = block_calculator::BlockCalculator::new();
+    bc.analyze_file(&dir3, "assembly_reg_ex_labeled.s");
 
 }
