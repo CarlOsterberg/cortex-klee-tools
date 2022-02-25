@@ -1,8 +1,8 @@
-Instruction Ret : 2
-Instruction Br : 3
-Instruction ICmp : 2
-Instruction Load : 4
-Instruction BitCast : 1
-Instruction Call : 4
-Instruction Store : 3
-Instruction Alloca : 4
+Ret : 2
+Br : 3
+ICmp : 2
+Load : 4
+BitCast : 1
+Call : 4
+Store : 3
+Alloca : 4
