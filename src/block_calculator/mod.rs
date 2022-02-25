@@ -18,10 +18,11 @@ pub struct Block {
 pub struct BlockCalculator {
     //(fn_nr, blk_nr) -> Block
     block_map: HashMap<(i32, i32), Block>,
-    fn_map: HashMap<String, i32>,
+    pub fn_map: HashMap<String, i32>,
     conditional_branch_instructions: HashSet<String>,
     unconditional_branch_instructions: HashSet<String>,
     other_branch_instructions: HashSet<String>,
+    block_stack: Vec<(String, String)>,
 }
 
 pub fn init_conditional_branch_instructions() -> HashSet<String> {
@@ -72,6 +73,7 @@ impl BlockCalculator {
             conditional_branch_instructions: init_conditional_branch_instructions(),
             unconditional_branch_instructions: init_unconditional_branch_instructions(),
             other_branch_instructions: init_other_branch_instructions(),
+            block_stack: Vec::new(),
         }
 
     }
@@ -117,7 +119,8 @@ impl BlockCalculator {
                 if block_label.is_match(row) {
                     let split: Vec<&str> = row.split("%").collect();
                     let label = split[split.len()-1];
-                    current_block_label = format!("%{}", label).to_string();
+                    //current_block_label = format!("%{}", label).to_string();
+                    current_block_label = label.to_string();
                 }
             }
             else if bb.is_match(row) {
@@ -137,7 +140,8 @@ impl BlockCalculator {
                 if block_label.is_match(row) {
                     let split: Vec<&str> = row.split("%").collect();
                     let label = split[split.len()-1];
-                    current_block_label = format!("%{}", label).to_string();
+                    //current_block_label = format!("%{}", label).to_string();
+                    current_block_label = label.to_string();
                 }
             }
             else if fn_end.is_match(row){
@@ -191,7 +195,8 @@ impl BlockCalculator {
                 if block_label.is_match(row) {
                     let split: Vec<&str> = row.split("%").collect();
                     let label = split[split.len()-1];
-                    current_block_label = format!("%{}", label).to_string();
+                    //current_block_label = format!("%{}", label).to_string();
+                    current_block_label = label.to_string();
                 }
             }
             else if bb.is_match(row) {
@@ -205,7 +210,9 @@ impl BlockCalculator {
                 if block_label.is_match(row) {
                     let split: Vec<&str> = row.split("%").collect();
                     let label = split[split.len()-1];
-                    current_block_label = format!("%{}", label).to_string();
+                    //current_block_label = format!("%{}", label).to_string();
+                    current_block_label = label.to_string();
+
                 }
             }
             else if (asm_instruction.is_match(row)) {
@@ -254,7 +261,61 @@ impl BlockCalculator {
         }
     }
 
-    pub fn analyze_file(&mut self, path: &PathBuf, file_name: &str) {
+    pub fn solve_control_flow(&mut self, stack: Vec<(String, String)>) {
+        self.block_stack = stack;
+        let main_number = self.fn_map.get(&"main".to_string()).unwrap().clone();
+        self.solve_fn_control_flow((main_number,0));
+    } 
+
+    fn solve_fn_control_flow(&mut self, fn_key: (i32, i32)) {
+        let mut key = fn_key;
+        loop {
+            println!("currently in block: {:?}", key);
+            let mut current_block = self.block_map.get(&key).unwrap();
+            for c in current_block.calls.clone() {
+                if c == "klee_make_symbolic".to_string() {
+                    continue;
+                }
+                let fn_nr = self.fn_map.get(&c).unwrap().clone();
+                self.solve_fn_control_flow((fn_nr, 0));
+            }
+            current_block = self.block_map.get(&key).unwrap();
+            if current_block.successors.len() == 0 {
+                return;
+            }
+            else if current_block.successors.len() == 1 {
+                key = current_block.successors[0];
+            }
+            else {
+                println!("performing conditional branch in: {} in function {}", current_block.llvmir_label, current_block.function);
+                while *self.block_stack.last().unwrap() != (current_block.function.clone(), current_block.llvmir_label.clone()){
+                    println!("popping 1");
+                    println!("{:?}", self.block_stack.pop());
+                }
+                //pop all the calls and find the next block
+                while *self.block_stack.last().unwrap() == (current_block.function.clone(), current_block.llvmir_label.clone()){
+                    println!("popping 2");
+                    println!("{:?}", self.block_stack.pop());
+                }
+                let next_tuple = &self.block_stack[self.block_stack.len() - 1];
+                println!("{:?}", next_tuple);
+                //let next_tuple = self.block_stack.pop().unwrap();
+                let mut succ_found = false;
+                for s in &current_block.successors {
+                    let b = self.block_map.get(s).unwrap();
+                    if b.function == next_tuple.0 && b.llvmir_label == next_tuple.1 {
+                        succ_found = true;
+                        key = *s;
+                    }
+                }
+                if !succ_found {
+                    panic!("could not find successor after block: {}", current_block.llvmir_label);
+                }
+            }
+        }
+    }
+
+    pub fn analyze_file_block_structure(&mut self, path: &PathBuf, file_name: &str) {
         let dir_read_res = path.read_dir();
         match dir_read_res {
             Ok(read_dir) => {
@@ -285,6 +346,7 @@ impl BlockCalculator {
     pub fn print_maps(&mut self){
         for (key, value) in &self.block_map {
             println!("map key is ({}, {})", key.0, key.1);
+            println!("{}", value.llvmir_label);
             if value.successors.len() > 0 {
                 for s in &value.successors {
                     println!("successor: ({}, {})", s.0, s.1);

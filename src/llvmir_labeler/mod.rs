@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::collections::HashMap;
 
 pub struct Labeler {
-    label_map: HashMap<(String, u32), String>,
+    pub label_map: HashMap<(String, i32), String>,
 }
 
 impl Labeler {
@@ -18,7 +18,7 @@ impl Labeler {
 
     pub fn rename_declarations(&mut self, file_contents: String) -> String{
         let mut delta: u32 = 0;
-        let mut fn_nr: u32 = 0;
+        let mut fn_nr: i32 = -1;
         let rows: Vec<&str> = file_contents.split("\n").collect();
         let mut new_rows = Vec::new();
         let numbered_block = Regex::new(r"^(\s*)(?P<x>[0-9]+):\D").unwrap();
@@ -73,7 +73,7 @@ impl Labeler {
 
     //Renames the uses of register after the first pass has been done
     pub fn rename_uses(&mut self, file_contents: String) -> String {
-        let mut fn_nr: u32 = 0;
+        let mut fn_nr: i32 = -1;
         let rows: Vec<&str> = file_contents.split("\n").collect();
         let mut new_rows = Vec::new();
         let use_of_reg = Regex::new(r"%(?P<x>[0-9]+)").unwrap();
@@ -126,7 +126,7 @@ impl Labeler {
 
     }
 
-    pub fn relabel_row(&mut self, row: String, fn_nr: &u32) -> String {
+    pub fn relabel_row(&mut self, row: String, fn_nr: &i32) -> String {
         let mut start_index: usize = 0;
         let mut end_index: usize = 0;
         let mut found_percent = false;
@@ -201,5 +201,12 @@ impl Labeler {
         let path_clone = path.clone();
         let new_name = format!("{}_labeled.{}", path_clone.join(file_name_split[0]).to_str().unwrap(), file_name_split[1]);
         fs::write(new_name, file_contents).unwrap();
+    }
+
+    pub fn print_map(&mut self){
+        for (key, value) in &self.label_map {
+            println!("map key is ({}, {})", key.0, key.1);
+            println!("value is {}", value);
+        }
     }
 }
