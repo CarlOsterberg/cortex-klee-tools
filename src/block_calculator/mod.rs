@@ -1,10 +1,7 @@
 use regex::Regex;
-use std::fmt::Result;
 use std::fs;
-use std::ops::Add;
 use std::path::PathBuf;
 use std::collections::{HashMap, HashSet};
-use std::thread::current;
 
 pub struct Block {
     function: String,
@@ -78,6 +75,7 @@ impl BlockCalculator {
 
     }
 
+    //Constructs a Block struct for every block in the assembly file and inserts it into self.block_map
     pub fn build_map_first_pass(&mut self, file_contents: &String) {
         let lbb = Regex::new(r"^(\s*).LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
         let bb = Regex::new(r"^(\s*)@(\s*)%bb.(?P<x>[0-9]+):").unwrap();
@@ -158,29 +156,21 @@ impl BlockCalculator {
         }
     }
 
+
+    //Sets the successors and calls for every block created in build_map_first_pass
     pub fn build_map_second_pass(&mut self, file_contents: &String) {
         let lbb = Regex::new(r"^(\s*).LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
         let lbb_use = Regex::new(r".LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
         let bb = Regex::new(r"^(\s*)@(\s*)%bb.(?P<x>[0-9]+):").unwrap();
         let asm_fn_def = Regex::new(r"^(?P<x>[^.\s]+):").unwrap();
-        let block_label = Regex::new(r"@(\s*)%(?P<x>[^:]+)(\s)*$").unwrap();
         let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();
         let move_lr_to_pc = Regex::new(r"^(\s*)mov(\s*)pc(\s*),(\s*)lr").unwrap();
         let mut unconditional_block = false;
-        let mut current_fn = "".to_string();
-        let mut current_block_label = "initial_fn_block".to_string();
-        let mut current_asm_label = "".to_string();
         let mut current_block_nr = -1;
         let mut current_fn_nr = -1;
         let rows: Vec<&str> = file_contents.split("\n").collect();
         for row in rows {
             if asm_fn_def.is_match(row) {
-                let mut fn_name = "".to_string();
-                for cap in asm_fn_def.captures_iter(row){
-                    fn_name = cap[1].to_string().clone();
-                    break;
-                }
-                current_fn = fn_name;
                 current_fn_nr += 1;
                 current_block_nr = -1;
             }
@@ -191,13 +181,6 @@ impl BlockCalculator {
                 }
                 current_block_nr += 1;
                 unconditional_block = false;
-                current_asm_label = format!(".LBB{}_{}", current_fn_nr, current_block_nr);
-                if block_label.is_match(row) {
-                    let split: Vec<&str> = row.split("%").collect();
-                    let label = split[split.len()-1];
-                    //current_block_label = format!("%{}", label).to_string();
-                    current_block_label = label.to_string();
-                }
             }
             else if bb.is_match(row) {
                 if !unconditional_block && current_block_nr >= 0{
@@ -206,16 +189,8 @@ impl BlockCalculator {
                 }
                 current_block_nr += 1;
                 unconditional_block = false;
-                current_asm_label = format!(".%bb.{}", current_block_nr);
-                if block_label.is_match(row) {
-                    let split: Vec<&str> = row.split("%").collect();
-                    let label = split[split.len()-1];
-                    //current_block_label = format!("%{}", label).to_string();
-                    current_block_label = label.to_string();
-
-                }
             }
-            else if (asm_instruction.is_match(row)) {
+            else if asm_instruction.is_match(row) {
                 for cap in asm_instruction.captures_iter(row){
                     if self.conditional_branch_instructions.contains(&cap[2].to_string()){
                         let lbb_split: Vec<&str> = row.split("LBB").collect();
@@ -261,12 +236,15 @@ impl BlockCalculator {
         }
     }
 
+
+    //Finds the main routine and starts following the control flow
     pub fn solve_control_flow(&mut self, stack: Vec<(String, String)>) {
         self.block_stack = stack;
         let main_number = self.fn_map.get(&"main".to_string()).unwrap().clone();
         self.solve_fn_control_flow((main_number,0));
     } 
 
+    //Tries to refollow the control flow as specified by the block stack
     fn solve_fn_control_flow(&mut self, fn_key: (i32, i32)) {
         let mut key = fn_key;
         loop {
@@ -315,6 +293,7 @@ impl BlockCalculator {
         }
     }
 
+    //Runs the first and second pass for a given file
     pub fn analyze_file_block_structure(&mut self, path: &PathBuf, file_name: &str) {
         let dir_read_res = path.read_dir();
         match dir_read_res {

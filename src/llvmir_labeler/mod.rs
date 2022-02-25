@@ -1,7 +1,5 @@
 use regex::Regex;
 use std::fs;
-use std::fs::File;
-use std::io::Write;
 use std::path::PathBuf;
 use std::collections::HashMap;
 
@@ -91,7 +89,6 @@ impl Labeler {
                     let mut i = 0;
                     let mut parts = Vec::new();
                     for s in split{
-                        let mut new_s = s.to_string();
                         if i == 0 {
                             //ignore the register being assigned to
                             i += 1;
@@ -128,7 +125,7 @@ impl Labeler {
 
     pub fn relabel_row(&mut self, row: String, fn_nr: &i32) -> String {
         let mut start_index: usize = 0;
-        let mut end_index: usize = 0;
+        let mut end_index: usize;
         let mut found_percent = false;
         let mut number_as_string = "".to_string();
         let mut row_clone = row.clone();
