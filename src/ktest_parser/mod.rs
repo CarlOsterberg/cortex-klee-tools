@@ -28,8 +28,8 @@ pub struct Instructions {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct Labels {
-    file_name: String,
-    labels: Vec<String>
+    pub file_name: String,
+    pub labels: Vec<(String, String)>
 }
 
 impl KtestData {
@@ -190,7 +190,8 @@ impl Labels {
         let mut labels = Vec::new();
         let labels_str: Vec<&str> = file_contents.split(" ").collect();
         for l in labels_str {
-            labels.push(l.to_string())
+            let split: Vec<&str> = l.split("|").collect();
+            labels.push((split[1].to_string(), split[0].to_string()))
         }
         Ok(
             Labels {
