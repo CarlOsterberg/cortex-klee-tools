@@ -96,6 +96,7 @@ impl BlockCalculator {
                     break;
                 }
                 current_fn = fn_name;
+                current_block_label = "initial_fn_block".to_string();
                 current_fn_nr += 1;
                 self.fn_map.insert(current_fn.clone(), current_fn_nr);
                 current_block_nr = -1;
@@ -165,7 +166,11 @@ impl BlockCalculator {
         let asm_fn_def = Regex::new(r"^(?P<x>[^.\s]+):").unwrap();
         let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();
         let move_lr_to_pc = Regex::new(r"^(\s*)mov(\s*)pc(\s*),(\s*)lr").unwrap();
+        let pop = Regex::new(r"(^\s*)pop").unwrap();
+        let pop_single = Regex::new(r"^(\s*)pop([a-z]*)(\s*)(?P<x>[a-z0-9]+)").unwrap();
+        let pop_multiple = Regex::new(r"^(\s*)pop([a-z]*)(\s*)[{]").unwrap();
         let mut unconditional_block = false;
+        let mut lr_popped = false;
         let mut current_block_nr = -1;
         let mut current_fn_nr = -1;
         let rows: Vec<&str> = file_contents.split("\n").collect();
@@ -173,6 +178,7 @@ impl BlockCalculator {
             if asm_fn_def.is_match(row) {
                 current_fn_nr += 1;
                 current_block_nr = -1;
+                lr_popped = false;
             }
             else if lbb.is_match(row) {
                 if !unconditional_block && current_block_nr >= 0{
@@ -212,11 +218,16 @@ impl BlockCalculator {
                         }
                         else {
                             let split: Vec<&str> = row.split_whitespace().collect();
+                            //direct branch to return
                             if split[1].eq("lr") {
                                 //No successors for the block since it returns
                                 unconditional_block = true;
                             }
                             else {
+                                //for now assume immediate return after call
+                                if lr_popped {
+                                    unconditional_block = true;
+                                }
                                 let callee_name = split[1].to_string();
                                 let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
                                 old_block.calls.push(callee_name);
@@ -225,6 +236,24 @@ impl BlockCalculator {
                     }
                     else if self.other_branch_instructions.contains(&cap[1].to_string()){
                         panic!("unimplemented");
+                    }
+                    else if pop_single.is_match(row) {
+                        let split: Vec<&str> = row.split_whitespace().collect();
+                        if (split[1].eq("lr")) {
+                            lr_popped = true;
+                        }
+                    }
+                    else if pop_multiple.is_match(row) {
+                        let row_clone = row.clone();
+                        let row_clone = row_clone.replace("{", "");
+                        let row_clone = row_clone.replace("}", "");
+                        let row_clone = row_clone.replace(",", "");
+                        let split: Vec<&str> = row_clone.split_whitespace().collect();
+                        for s in split {
+                            if s.eq("lr") {
+                                lr_popped = true;
+                            }
+                        }
                     }
                     else if move_lr_to_pc.is_match(row) {
                         unconditional_block = true;
@@ -242,6 +271,7 @@ impl BlockCalculator {
         self.block_stack = stack;
         let main_number = self.fn_map.get(&"main".to_string()).unwrap().clone();
         self.solve_fn_control_flow((main_number,0));
+        println!("finished solving control flow");
     } 
 
     //Tries to refollow the control flow as specified by the block stack

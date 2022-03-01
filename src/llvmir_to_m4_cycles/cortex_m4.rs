@@ -2,7 +2,7 @@
 
 
 #[derive(Clone,Debug)]
-
+#[allow(dead_code)]
 pub enum CortexM4 {
     MOVreg,
     MOVW,

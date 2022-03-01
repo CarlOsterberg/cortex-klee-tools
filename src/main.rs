@@ -10,7 +10,7 @@ mod block_calculator;
 //https://github.com/klee/klee/blob/master/tools/ktest-tool/ktest-tool
 
 fn main() {
-    let mut dir = env::current_dir().unwrap();
+    /*let mut dir = env::current_dir().unwrap();
     dir.push("src");
     dir.push("testing");
     let ktests = llvmir_to_m4_cycles::IrToM4::read_dir(dir.clone()).unwrap();
@@ -28,23 +28,23 @@ fn main() {
 
     for thing in things {
         println!("{:?}", thing);
-    }
+    }*/
   
     let mut dir2 = env::current_dir().unwrap();
     dir2.push("src");
     dir2.push("llvmir_labeler");
     dir2.push("test_cases");
     let mut labeler = llvmir_labeler::Labeler::new();
-    let replaced_string = labeler.label_file(&dir2, "assembly.ll").unwrap();
+    let replaced_string = labeler.label_file(&dir2, "assembly_reg_ex.ll").unwrap();
     //println!("{}", replaced_string);
-    labeler.save_file(&dir2, "assembly.ll", replaced_string);
+    labeler.save_file(&dir2, "assembly_reg_ex.ll", replaced_string);
 
 
     let mut dir4 = env::current_dir().unwrap();
     dir4.push("src");
     dir4.push("ktest_parser");
     dir4.push("test_cases");
-    dir4.push("getsign");
+    dir4.push("regexp");
     let labels = ktest_parser::read_labels(dir4).unwrap();
 
     let mut dir3 = env::current_dir().unwrap();
@@ -52,7 +52,7 @@ fn main() {
     dir3.push("llvmir_labeler");
     dir3.push("test_cases");
     let mut bc = block_calculator::BlockCalculator::new();
-    bc.analyze_file_block_structure(&dir3, "assembly_labeled.s");
+    bc.analyze_file_block_structure(&dir3, "assembly_reg_ex_labeled.s");
 
     labeler.print_map();
 
@@ -69,11 +69,20 @@ fn main() {
                 path_labels_renamed.push((pl.0.clone(), block_name.clone()));
                 continue;
             }
+            //A number name which has not been replaces has to be the initial block
+            else {
+                path_labels_renamed.push((pl.0.clone(), "initial_fn_block".to_string()));
+            }
         }
-        path_labels_renamed.push((pl.0.clone(), "initial_fn_block".to_string()));
+        //Label already had a name before the labeling tool
+        else {
+            path_labels_renamed.push(pl.clone());
+        }
     }
 
     path_labels_renamed.reverse();
+
+    println!("printing path_labels");
 
     for pl in &path_labels_renamed {
         println!("{:?}", pl);
