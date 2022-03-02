@@ -2454,6 +2454,6 @@ __rustc_debug_gdb_scripts_section__:
 	.long	0                               @ End Mark
 .LpubTypes_end0:
 	.section	".note.GNU-stack","",%progbits
-	.eabi_attribute	30, 2	@ Tag_ABI_optimization_goals
+	.eabi_attribute	30, 1	@ Tag_ABI_optimization_goals
 	.section	.debug_line,"",%progbits
 .Lline_table_start0:

@@ -30,13 +30,15 @@ fn main() {
         println!("{:?}", thing);
     }*/
   
+
+
+    //Relabel an llvm ir file
     let mut dir2 = env::current_dir().unwrap();
     dir2.push("src");
     dir2.push("llvmir_labeler");
     dir2.push("test_cases");
     let mut labeler = llvmir_labeler::Labeler::new();
     let replaced_string = labeler.label_file(&dir2, "assembly_reg_ex.ll").unwrap();
-    //println!("{}", replaced_string);
     labeler.save_file(&dir2, "assembly_reg_ex.ll", replaced_string);
 
 
@@ -69,7 +71,7 @@ fn main() {
                 path_labels_renamed.push((pl.0.clone(), block_name.clone()));
                 continue;
             }
-            //A number name which has not been replaces has to be the initial block
+            //A number name which has not been replaced has to be the initial block
             else {
                 path_labels_renamed.push((pl.0.clone(), "initial_fn_block".to_string()));
             }
@@ -89,5 +91,7 @@ fn main() {
     }
 
     bc.solve_control_flow(path_labels_renamed);
+
+    println!("Estimated cycles: {}", bc.cycles);
 
 }
