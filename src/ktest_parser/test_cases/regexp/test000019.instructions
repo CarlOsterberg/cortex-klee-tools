@@ -1,0 +1,10 @@
+SExt : 1
+PHI : 36
+Ret : 10
+GetElementPtr : 20
+Br : 48
+ICmp : 58
+Load : 29
+Call : 67
+Select : 16
+Alloca : 1

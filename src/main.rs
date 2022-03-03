@@ -60,42 +60,52 @@ pub fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files
     let labeled_file_name = format!("{}_labeled.s", file_name_split[0]);
     bc.analyze_file_block_structure(path, &labeled_file_name);
 
-    labeler.print_map();
+    //labeler.print_map();
 
-    let path_labels = &labels[0].labels;
-    let mut path_labels_renamed = Vec::new();
-    for pl in path_labels {
-        let fn_nr = bc.fn_map.get(&pl.0).unwrap();
-        let percent_removed = &pl.1[1..pl.1.len()];
-        let label_number = percent_removed.parse::<u32>();
-        if label_number.is_ok() {
-            //if labeler has replaced the number with a new label, push that instead
-            if labeler.label_map.contains_key(&(label_number.clone().unwrap().to_string(), *fn_nr)) {
-                let block_name = labeler.label_map.get(&(label_number.unwrap().to_string(), *fn_nr)).unwrap().to_string();
-                path_labels_renamed.push((pl.0.clone(), block_name.clone()));
-                continue;
+    //let path_labels = &labels[0].labels;
+    let mut label_file_count = 0;
+    println!("paths to analyze: {}", labels.len());
+    for l in labels {
+        let path_labels = l.labels;
+        if path_labels[path_labels.len() - 1].0 != "main".to_string() {
+            println!("skipping path which crashes in file: {}", l.file_name);
+            continue;
+        }
+        label_file_count += 1;
+        let mut path_labels_renamed = Vec::new();
+        for pl in path_labels {
+            let fn_nr = bc.fn_map.get(&pl.0).unwrap();
+            let percent_removed = &pl.1[1..pl.1.len()];
+            let label_number = percent_removed.parse::<u32>();
+            if label_number.is_ok() {
+                //if labeler has replaced the number with a new label, push that instead
+                if labeler.label_map.contains_key(&(label_number.clone().unwrap().to_string(), *fn_nr)) {
+                    let block_name = labeler.label_map.get(&(label_number.unwrap().to_string(), *fn_nr)).unwrap().to_string();
+                    path_labels_renamed.push((pl.0.clone(), block_name.clone()));
+                    continue;
+                }
+                //A number name which has not been replaced has to be the initial block
+                else {
+                    path_labels_renamed.push((pl.0.clone(), "initial_fn_block".to_string()));
+                }
             }
-            //A number name which has not been replaced has to be the initial block
+            //Label already had a name before the labeling tool
             else {
-                path_labels_renamed.push((pl.0.clone(), "initial_fn_block".to_string()));
+                path_labels_renamed.push(pl.clone());
             }
         }
-        //Label already had a name before the labeling tool
-        else {
-            path_labels_renamed.push(pl.clone());
-        }
+
+        path_labels_renamed.reverse();
+
+        /*println!("printing path_labels for file: {}", l.file_name);
+
+        for pl in &path_labels_renamed {
+            println!("{:?}", pl);
+        }*/
+
+        bc.solve_control_flow(path_labels_renamed);
+
+        println!("Estimated cycles: {}", bc.cycles);
+        println!("paths run: {}", label_file_count);
     }
-
-    path_labels_renamed.reverse();
-
-    println!("printing path_labels");
-
-    for pl in &path_labels_renamed {
-        println!("{:?}", pl);
-    }
-
-    bc.solve_control_flow(path_labels_renamed);
-
-    println!("Estimated cycles: {}", bc.cycles);
-
 }

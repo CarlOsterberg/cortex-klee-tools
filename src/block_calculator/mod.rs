@@ -294,6 +294,8 @@ impl BlockCalculator {
 
     //Finds the main routine and starts following the control flow
     pub fn solve_control_flow(&mut self, stack: Vec<(String, String)>) {
+        self.cycles = 0;
+        println!("----------------Starting new path--------------------------");
         self.block_stack = stack;
         let main_number = self.fn_map.get(&"main".to_string()).unwrap().clone();
         self.solve_fn_control_flow((main_number,0));
@@ -322,15 +324,16 @@ impl BlockCalculator {
                 key = current_block.successors[0];
             }
             else {
+                assert!(current_block.successors.len() == 2);
                 println!("performing conditional branch in: {} in function {}", current_block.llvmir_label, current_block.function);
                 while *self.block_stack.last().unwrap() != (current_block.function.clone(), current_block.llvmir_label.clone()){
-                    println!("popping 1");
-                    println!("{:?}", self.block_stack.pop());
+                    //println!("{:?}", self.block_stack.pop());
+                    self.block_stack.pop();
                 }
                 //pop all the calls and find the next block
                 while *self.block_stack.last().unwrap() == (current_block.function.clone(), current_block.llvmir_label.clone()){
-                    println!("popping 2");
-                    println!("{:?}", self.block_stack.pop());
+                    //println!("{:?}", self.block_stack.pop());
+                    self.block_stack.pop();
                 }
                 let next_tuple = &self.block_stack[self.block_stack.len() - 1];
                 println!("{:?}", next_tuple);
@@ -338,7 +341,11 @@ impl BlockCalculator {
                 let mut succ_found = false;
                 for s in &current_block.successors {
                     let b = self.block_map.get(s).unwrap();
-                    if b.function == next_tuple.0 && b.llvmir_label == next_tuple.1 {
+                    //if b.function == next_tuple.0 && b.llvmir_label == next_tuple.1 {
+                    if b.llvmir_label.len() < next_tuple.1.len() {
+                        continue;
+                    }
+                    if b.function == next_tuple.0 && b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1{
                         succ_found = true;
                         key = *s;
                     }
@@ -347,7 +354,10 @@ impl BlockCalculator {
                     if current_block.conditional_return {
                         return;
                     }
-                    panic!("could not find successor after block: {}", current_block.llvmir_label);
+                    //panic!("could not find successor after block: {}", current_block.llvmir_label);
+                    println!("Could not find succcessor after block: {}", current_block.llvmir_label);
+                    key = current_block.successors[0];
+                    println!("branching to block: {:?}", key);
                 }
             }
         }
