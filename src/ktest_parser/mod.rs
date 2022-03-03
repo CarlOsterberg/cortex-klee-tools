@@ -268,7 +268,7 @@ pub fn read_instr(path: PathBuf) -> Result<Vec<Instructions>, String> {
     }
 }
 
-pub fn read_labels(path: PathBuf) -> Result<Vec<Labels>, String> {
+pub fn read_labels(path: &PathBuf) -> Result<Vec<Labels>, String> {
     let dir_read_res = path.read_dir();
     let mut label_files = Vec::new();
     match dir_read_res {

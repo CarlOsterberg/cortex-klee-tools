@@ -181,7 +181,6 @@ impl BlockCalculator {
         let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();
         let move_lr_to_pc = Regex::new(r"^(\s*)mov(\s*)pc(\s*),(\s*)lr").unwrap();
         let move_lr_to_pc_cond = Regex::new(r"^(\s*)mov[a-z]+(\s*)pc(\s*),(\s*)lr").unwrap();
-        let pop = Regex::new(r"(^\s*)pop").unwrap();
         let pop_single = Regex::new(r"^(\s*)pop([a-z]*)(\s*)(?P<x>[a-z0-9]+)").unwrap();
         let pop_multiple = Regex::new(r"^(\s*)pop([a-z]*)(\s*)[{]").unwrap();
         let mut unconditional_block = false;
@@ -194,6 +193,8 @@ impl BlockCalculator {
             if asm_fn_def.is_match(row) {
                 current_fn_nr += 1;
                 current_block_nr = -1;
+                unconditional_block = false;
+                conditional_return = false;
                 lr_popped = false;
             }
             else if lbb.is_match(row) {
@@ -205,6 +206,7 @@ impl BlockCalculator {
                 current_block_nr += 1;
                 unconditional_block = false;
                 conditional_return = false;
+                lr_popped = false;
             }
             else if bb.is_match(row) {
                 if !unconditional_block && current_block_nr >= 0{
@@ -215,6 +217,7 @@ impl BlockCalculator {
                 current_block_nr += 1;
                 unconditional_block = false;
                 conditional_return = false;
+                lr_popped = false;
             }
             else if asm_instruction.is_match(row) {
                 for cap in asm_instruction.captures_iter(row){

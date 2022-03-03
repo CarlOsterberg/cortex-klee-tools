@@ -144,7 +144,7 @@ mod tests {
         dir.push("test_cases");
         let paths = fs::read_dir(dir);
         for test_folder in paths.unwrap() {
-            let labels = ktest_parser::read_labels(test_folder.unwrap().path());
+            let labels = ktest_parser::read_labels(&test_folder.unwrap().path());
             println!("{:?}", labels);
             assert!(labels.is_ok());
         }
