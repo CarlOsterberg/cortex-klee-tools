@@ -39,9 +39,9 @@ fn main() {
     dir4.push("src");
     dir4.push("ktest_parser");
     dir4.push("test_cases");
-    dir4.push("regexp");
+    dir4.push("sort");
 
-    run_labeler_and_bc(&dir2, "assembly_reg_ex.ll".to_string(), &dir4);
+    run_labeler_and_bc(&dir2, "assembly_sort.ll".to_string(), &dir4);
 
 }
 

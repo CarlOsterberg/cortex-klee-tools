@@ -1,0 +1,8 @@
+Error: ASSERTION FAIL: temp1[i] == temp2[i]
+File: sort.c
+Line: 68
+assembly.ll line: 290
+State: 2
+Stack: 
+	#000000290 in test (=94362795468224, =4) at sort.c:68
+	#100000323 in main () at sort.c:78

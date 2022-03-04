@@ -310,30 +310,34 @@ impl BlockCalculator {
             let mut current_block = self.block_map.get(&key).unwrap();
             self.cycles += current_block.cycles;
             for c in current_block.calls.clone() {
-                if c == "klee_make_symbolic".to_string() {
+                /*if c == "klee_make_symbolic".to_string() {
+                    continue;
+                }*/
+                if !self.fn_map.contains_key(&c) {
+                    println!("################ Skipping unknown call: {c} ################");
                     continue;
                 }
                 let fn_nr = self.fn_map.get(&c).unwrap().clone();
                 self.solve_fn_control_flow((fn_nr, 0));
             }
             current_block = self.block_map.get(&key).unwrap();
-            if current_block.successors.len() == 0 {
+            if current_block.successors.len() == 0 && !current_block.conditional_return{
                 return;
             }
-            else if current_block.successors.len() == 1 {
+            else if current_block.successors.len() == 1 && !current_block.conditional_return{
                 key = current_block.successors[0];
             }
             else {
-                assert!(current_block.successors.len() == 2);
+                assert!(current_block.successors.len() <= 2);
                 println!("performing conditional branch in: {} in function {}", current_block.llvmir_label, current_block.function);
                 while *self.block_stack.last().unwrap() != (current_block.function.clone(), current_block.llvmir_label.clone()){
-                    //println!("{:?}", self.block_stack.pop());
-                    self.block_stack.pop();
+                    println!("{:?}", self.block_stack.pop());
+                    //self.block_stack.pop();
                 }
                 //pop all the calls and find the next block
                 while *self.block_stack.last().unwrap() == (current_block.function.clone(), current_block.llvmir_label.clone()){
-                    //println!("{:?}", self.block_stack.pop());
-                    self.block_stack.pop();
+                    println!("{:?}", self.block_stack.pop());
+                    //self.block_stack.pop();
                 }
                 let next_tuple = &self.block_stack[self.block_stack.len() - 1];
                 println!("{:?}", next_tuple);
@@ -354,7 +358,6 @@ impl BlockCalculator {
                     if current_block.conditional_return {
                         return;
                     }
-                    //panic!("could not find successor after block: {}", current_block.llvmir_label);
                     println!("Could not find succcessor after block: {}", current_block.llvmir_label);
                     key = current_block.successors[0];
                     println!("branching to block: {:?}", key);
