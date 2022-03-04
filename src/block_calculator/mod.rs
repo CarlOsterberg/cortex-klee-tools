@@ -262,7 +262,7 @@ impl BlockCalculator {
                     }
                     else if pop_single.is_match(row) {
                         let split: Vec<&str> = row.split_whitespace().collect();
-                        if (split[1].eq("lr")) {
+                        if split[1].eq("lr") {
                             lr_popped = true;
                         }
                     }
