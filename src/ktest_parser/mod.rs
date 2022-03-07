@@ -32,6 +32,7 @@ pub struct Labels {
     pub labels: Vec<(String, String)>
 }
 
+#[allow(dead_code)]
 impl KtestData {
     pub fn new(file_name: String, bytes: Vec<u8>) -> Result<KtestData, String> {
         //read header
@@ -147,6 +148,7 @@ impl KtestData {
     }
 }
 
+#[allow(dead_code)]
 impl Instructions {
     pub fn new(file_name: String, file_contents: String) -> Result<Instructions, String> {
         let rows: Vec<&str> = file_contents.split("\n").collect();
@@ -176,15 +178,16 @@ impl Instructions {
             }
         )
     }
-    pub fn getInstructions(self) -> Vec<(String,u32)> {
+    pub fn get_instructions(self) -> Vec<(String,u32)> {
         self.instr
     }
 
-    pub fn getFilename(self) -> String {
+    pub fn get_filename(self) -> String {
         self.file_name
     }
 }
 
+#[allow(dead_code)]
 impl Labels {
     pub fn new(file_name: String, file_contents: String) -> Result<Labels, String> {
         let mut labels = Vec::new();
@@ -202,6 +205,7 @@ impl Labels {
     }
 }
 
+#[allow(dead_code)]
 pub fn read_ktests(path: PathBuf) -> Result<Vec<KtestData>, String> {
     let dir_read_res = path.read_dir();
     let mut ktests = Vec::new();
@@ -235,6 +239,7 @@ pub fn read_ktests(path: PathBuf) -> Result<Vec<KtestData>, String> {
     }
 }
 
+#[allow(dead_code)]
 pub fn read_instr(path: PathBuf) -> Result<Vec<Instructions>, String> {
     let dir_read_res = path.read_dir();
     let mut instr_files = Vec::new();
@@ -268,6 +273,7 @@ pub fn read_instr(path: PathBuf) -> Result<Vec<Instructions>, String> {
     }
 }
 
+#[allow(dead_code)]
 pub fn read_labels(path: &PathBuf) -> Result<Vec<Labels>, String> {
     let dir_read_res = path.read_dir();
     let mut label_files = Vec::new();

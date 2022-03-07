@@ -1,8 +1,12 @@
-use std::{fs,env};
-use crate::ktest_parser;
-use crate::llvmir_to_m4_cycles;
-use regex::Regex;
 
+#[allow(unused_imports)]
+use std::{fs,env};
+#[allow(unused_imports)]
+use crate::ktest_parser;
+#[allow(unused_imports)]
+use crate::llvmir_to_m4_cycles;
+#[allow(unused_imports)]
+use regex::Regex;
 
 #[cfg(test)]
 mod tests {

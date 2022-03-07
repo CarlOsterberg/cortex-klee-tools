@@ -3,6 +3,6 @@ Br : 3
 ICmp : 2
 Load : 4
 BitCast : 1
-Call : 4
+Call : 1
 Store : 3
 Alloca : 4

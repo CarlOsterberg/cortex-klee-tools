@@ -3,10 +3,12 @@ use std::fs;
 use std::path::PathBuf;
 use std::collections::HashMap;
 
+#[allow(dead_code)]
 pub struct Labeler {
     pub label_map: HashMap<(String, i32), String>,
 }
 
+#[allow(dead_code)]
 impl Labeler {
     pub fn new() -> Labeler {
         Labeler {

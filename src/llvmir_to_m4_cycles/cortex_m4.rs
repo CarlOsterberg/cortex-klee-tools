@@ -1,5 +1,6 @@
 //https://developer.arm.com/documentation/100166/0001/Programmers-Model/CortexM4-set-summary/Table-of-processor-CortexM4s?lang=en
 
+#[allow(unused_imports)]
 use std::collections::HashMap;
 
 
@@ -115,8 +116,8 @@ pub enum CortexM4 {
     DSB,
 }
 
+#[allow(dead_code)]
 impl CortexM4 {
-
     pub fn start_sub_string(&self, full_string: &str, small_string: &str) -> bool {
         if small_string.len() > full_string.len() {
             return false;
@@ -134,7 +135,7 @@ impl CortexM4 {
     }
 
 
-    pub fn getUpper(self, mut b:u32,n:u32,w:u32) -> u32 {
+    pub fn get_upper(self, mut b:u32,n:u32,w:u32) -> u32 {
         let p=3;
         if b > p {
             b = p;
@@ -250,7 +251,7 @@ impl CortexM4 {
         }
     }
 
-    pub fn getLower(self, b:u32,n:u32,w:u32) -> u32 {
+    pub fn get_lower(self, b:u32,n:u32,w:u32) -> u32 {
         let p=1;
         match self {
             CortexM4::MOVreg => 1,

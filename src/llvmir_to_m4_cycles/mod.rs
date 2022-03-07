@@ -2,11 +2,11 @@ pub(crate) mod cortex_m4;
 pub(crate) mod llvm_ir;
 use crate::ktest_parser::{self, Instructions};
 
-use std::{path::{PathBuf, self}, fs, vec};
+use std::{path::{PathBuf}, fs, vec};
 
 use self::{llvm_ir::LlvmIr, cortex_m4::{CortexM4}};
 
-
+#[allow(dead_code)]
 #[derive(Clone,Debug)]
 pub struct IrToM4 {
     llvm_ir: LlvmIr,
@@ -14,9 +14,10 @@ pub struct IrToM4 {
     cortex_bc: Vec<CortexM4>,
 }
 
+#[allow(dead_code)]
 impl IrToM4 {
     pub fn new(llvm_ir: &str) -> IrToM4 {
-        match LlvmIr::fromString(llvm_ir) {
+        match LlvmIr::from_string(llvm_ir) {
             Some(LlvmIr::Ret) => IrToM4 {
                 llvm_ir: LlvmIr::Ret,
                 cortex_wc: vec![CortexM4::MOVpc, CortexM4::POPpc, CortexM4::MOVpc],
@@ -38,8 +39,8 @@ impl IrToM4 {
                 cortex_wc: vec![CortexM4::B],
                 cortex_bc: vec![CortexM4::B],
             },
-            Some(LlvmIr::Unreachable)  => todo!(),
-            Some(LlvmIr::Invoke)  => todo!(),
+            Some(LlvmIr::_Unreachable)  => todo!(),
+            Some(LlvmIr::_Invoke)  => todo!(),
             Some(LlvmIr::Call)  => IrToM4 {
                 llvm_ir: LlvmIr::Call,
                 cortex_wc: vec![CortexM4::PUSH, CortexM4::MOVreg, CortexM4::BL],
@@ -319,12 +320,12 @@ impl IrToM4 {
             None => todo!(),
         }
     }
-    pub fn getUpper(self, b:u32, n:u32, w:u32) -> u32 {
-        self.cortex_wc.into_iter().map(|x|x.getUpper(b,n,w)).sum()
+    pub fn get_upper(self, b:u32, n:u32, w:u32) -> u32 {
+        self.cortex_wc.into_iter().map(|x|x.get_upper(b,n,w)).sum()
     }
 
-    pub fn getLower(self, b:u32, n:u32, w:u32) -> u32 {
-        self.cortex_bc.into_iter().map(|x|x.getLower(b,n,w)).sum()
+    pub fn get_lower(self, b:u32, n:u32, w:u32) -> u32 {
+        self.cortex_bc.into_iter().map(|x|x.get_lower(b,n,w)).sum()
     }
 
     pub fn read_file(path: PathBuf) -> Result<(String,Vec<IrToM4>),String> {
@@ -335,13 +336,13 @@ impl IrToM4 {
                 let filename = path.file_name().unwrap().to_str().unwrap().to_string();
                 match Instructions::new(filename, contents) {
                     Ok(instructions) => {
-                        for (instruction,nmbr) in instructions.clone().getInstructions(){
+                        for (instruction,nmbr) in instructions.clone().get_instructions(){
                             let conv_obj = IrToM4::new(&instruction);
                             for _ in 0..nmbr {
                                 ir_to_m4.push(conv_obj.clone()); 
                             }
                         }
-                        Ok((instructions.getFilename(),ir_to_m4))
+                        Ok((instructions.get_filename(),ir_to_m4))
                     }
                     Err(msg) => Err(msg),
                 }
@@ -356,13 +357,13 @@ impl IrToM4 {
             Ok(instr_obj_vec) => {
                 for instr_obj in instr_obj_vec {
                     let mut ir_to_m4_vec = Vec::new();
-                    for (instruction,nmbr) in instr_obj.clone().getInstructions(){
+                    for (instruction,nmbr) in instr_obj.clone().get_instructions(){
                         let conv_obj = IrToM4::new(&instruction);
                         for _ in 0..nmbr {
                             ir_to_m4_vec.push(conv_obj.clone()); 
                         }
                     };
-                    parsed_vectors.push((instr_obj.getFilename(),ir_to_m4_vec))
+                    parsed_vectors.push((instr_obj.get_filename(),ir_to_m4_vec))
                 }
                 Ok(parsed_vectors)
             }
