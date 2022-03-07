@@ -1,0 +1,12 @@
+Mul : 4
+ZExt : 32
+Ret : 12
+GetElementPtr : 157
+Add : 92
+ICmp : 105
+Br : 197
+Load : 450
+BitCast : 14
+Call : 68
+Store : 331
+Alloca : 52

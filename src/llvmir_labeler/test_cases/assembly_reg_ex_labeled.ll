@@ -8,20 +8,6 @@ target triple = "x86_64-pc-linux-gnu"
 @.str = private unnamed_addr constant [3 x i8] c"re\00", align 1
 @.str.1 = private unnamed_addr constant [6 x i8] c"hello\00", align 1
 
-define internal fastcc i32 @brtest(i32 %0) {
-  %2 = add i32 1, %0
-  %cond = icmp eq i32 %2, 3
-  br i1 %cond, label %.block1, label %.block2
-.block1:
-  br label %.block3
-.block2:
-  br label %.block4
-.block3:
-  ret i32 1
-.block4:
-  ret i32 0
-}
-
 ; Function Attrs: nofree noinline nosync nounwind readonly uwtable
 define internal fastcc void @match(i8* nocapture readonly %0) unnamed_addr #0 !dbg !9 {
   call void @llvm.dbg.value(metadata i8* %0, metadata !15, metadata !DIExpression()), !dbg !16
@@ -33,7 +19,6 @@ define internal fastcc void @match(i8* nocapture readonly %0) unnamed_addr #0 !d
 .customlabel0:                                               ; preds = %1
   %4 = getelementptr inbounds i8, i8* %0, i64 1, !dbg !22
   %5 = tail call fastcc i32 @matchhere(i8* nonnull %4, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @.str.1, i64 0, i64 0)), !dbg !23
-  %xd = tail call fastcc i32 @brtest(i32 5)
   br label %.loopexit, !dbg !24
 
 .preheader:                                       ; preds = %1, %.customlabel1
