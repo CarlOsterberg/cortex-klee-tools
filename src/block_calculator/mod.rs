@@ -8,9 +8,10 @@ pub struct Block {
     function: String,
     llvmir_label: String,
     assembly_label: String,
-    cycles: u128,
+    cycles: u64,
     successors: Vec<(i32, i32)>,
     calls: Vec<String>,
+    conditional_return: bool,
 }
 
 #[allow(dead_code)]
@@ -22,6 +23,7 @@ pub struct BlockCalculator {
     unconditional_branch_instructions: HashSet<String>,
     other_branch_instructions: HashSet<String>,
     block_stack: Vec<(String, String)>,
+    pub cycles: u64,
 }
 
 pub fn init_conditional_branch_instructions() -> HashSet<String> {
@@ -74,6 +76,7 @@ impl BlockCalculator {
             unconditional_branch_instructions: init_unconditional_branch_instructions(),
             other_branch_instructions: init_other_branch_instructions(),
             block_stack: Vec::new(),
+            cycles: 0,
         }
 
     }
@@ -83,6 +86,7 @@ impl BlockCalculator {
         let lbb = Regex::new(r"^(\s*).LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
         let bb = Regex::new(r"^(\s*)@(\s*)%bb.(?P<x>[0-9]+):").unwrap();
         let asm_fn_def = Regex::new(r"^(?P<x>[^.\s]+):").unwrap();
+        let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();
         let fn_end = Regex::new(r"^(\s*).fnend").unwrap();
         let block_label = Regex::new(r"@(\s*)%(?P<x>[^:]+)(\s)*$").unwrap();
         let mut current_fn = "".to_string();
@@ -90,6 +94,7 @@ impl BlockCalculator {
         let mut current_asm_label = "".to_string();
         let mut current_block_nr = -1;
         let mut current_fn_nr = -1;
+        let mut block_cycles: u64 = 0;
         let rows: Vec<&str> = file_contents.split("\n").collect();
         for row in rows {
             if asm_fn_def.is_match(row) {
@@ -99,6 +104,7 @@ impl BlockCalculator {
                     break;
                 }
                 current_fn = fn_name;
+                current_block_label = "initial_fn_block".to_string();
                 current_fn_nr += 1;
                 self.fn_map.insert(current_fn.clone(), current_fn_nr);
                 current_block_nr = -1;
@@ -109,12 +115,14 @@ impl BlockCalculator {
                         function: current_fn.clone(),
                         llvmir_label: current_block_label.clone(),
                         assembly_label: current_asm_label.clone(),
-                        cycles: 0,
+                        cycles: block_cycles,
                         successors: Vec::new(),
                         calls: Vec::new(),
+                        conditional_return: false,
                     };
                     self.block_map.insert((current_fn_nr, current_block_nr), prev_block);
                 }
+                block_cycles = 0;
                 current_block_nr += 1;
                 current_asm_label = format!(".LBB{}_{}", current_fn_nr, current_block_nr);
                 if block_label.is_match(row) {
@@ -130,12 +138,14 @@ impl BlockCalculator {
                         function: current_fn.clone(),
                         llvmir_label: current_block_label.clone(),
                         assembly_label: current_asm_label.clone(),
-                        cycles: 0,
+                        cycles: block_cycles,
                         successors: Vec::new(),
                         calls: Vec::new(),
+                        conditional_return: false,
                     };
                     self.block_map.insert((current_fn_nr, current_block_nr), prev_block);
                 }
+                block_cycles = 0;
                 current_block_nr += 1;
                 current_asm_label = format!(".%bb.{}", current_block_nr);
                 if block_label.is_match(row) {
@@ -150,11 +160,16 @@ impl BlockCalculator {
                     function: current_fn.clone(),
                     llvmir_label: current_block_label.clone(),
                     assembly_label: current_asm_label.clone(),
-                    cycles: 0,
+                    cycles: block_cycles,
                     successors: Vec::new(),
                     calls: Vec::new(),
+                    conditional_return: false,
                 };
                 self.block_map.insert((current_fn_nr, current_block_nr), prev_block);
+                block_cycles = 0;
+            }
+            else if asm_instruction.is_match(row) {
+                block_cycles += 1;
             }
         }
     }
@@ -168,7 +183,12 @@ impl BlockCalculator {
         let asm_fn_def = Regex::new(r"^(?P<x>[^.\s]+):").unwrap();
         let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();
         let move_lr_to_pc = Regex::new(r"^(\s*)mov(\s*)pc(\s*),(\s*)lr").unwrap();
+        let move_lr_to_pc_cond = Regex::new(r"^(\s*)mov[a-z]+(\s*)pc(\s*),(\s*)lr").unwrap();
+        let pop_single = Regex::new(r"^(\s*)pop([a-z]*)(\s*)(?P<x>[a-z0-9]+)").unwrap();
+        let pop_multiple = Regex::new(r"^(\s*)pop([a-z]*)(\s*)[{]").unwrap();
         let mut unconditional_block = false;
+        let mut lr_popped = false;
+        let mut conditional_return = false;
         let mut current_block_nr = -1;
         let mut current_fn_nr = -1;
         let rows: Vec<&str> = file_contents.split("\n").collect();
@@ -176,22 +196,31 @@ impl BlockCalculator {
             if asm_fn_def.is_match(row) {
                 current_fn_nr += 1;
                 current_block_nr = -1;
+                unconditional_block = false;
+                conditional_return = false;
+                lr_popped = false;
             }
             else if lbb.is_match(row) {
                 if !unconditional_block && current_block_nr >= 0{
                     let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
                     old_block.successors.push((current_fn_nr, current_block_nr + 1));
+                    old_block.conditional_return = conditional_return;
                 }
                 current_block_nr += 1;
                 unconditional_block = false;
+                conditional_return = false;
+                lr_popped = false;
             }
             else if bb.is_match(row) {
                 if !unconditional_block && current_block_nr >= 0{
                     let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
                     old_block.successors.push((current_fn_nr, current_block_nr + 1));
+                    old_block.conditional_return = conditional_return;
                 }
                 current_block_nr += 1;
                 unconditional_block = false;
+                conditional_return = false;
+                lr_popped = false;
             }
             else if asm_instruction.is_match(row) {
                 for cap in asm_instruction.captures_iter(row){
@@ -215,11 +244,16 @@ impl BlockCalculator {
                         }
                         else {
                             let split: Vec<&str> = row.split_whitespace().collect();
+                            //direct branch to return
                             if split[1].eq("lr") {
                                 //No successors for the block since it returns
                                 unconditional_block = true;
                             }
                             else {
+                                //for now assume immediate return after call
+                                if lr_popped {
+                                    unconditional_block = true;
+                                }
                                 let callee_name = split[1].to_string();
                                 let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
                                 old_block.calls.push(callee_name);
@@ -229,8 +263,29 @@ impl BlockCalculator {
                     else if self.other_branch_instructions.contains(&cap[1].to_string()){
                         panic!("unimplemented");
                     }
+                    else if pop_single.is_match(row) {
+                        let split: Vec<&str> = row.split_whitespace().collect();
+                        if split[1].eq("lr") {
+                            lr_popped = true;
+                        }
+                    }
+                    else if pop_multiple.is_match(row) {
+                        let row_clone = row.clone();
+                        let row_clone = row_clone.replace("{", "");
+                        let row_clone = row_clone.replace("}", "");
+                        let row_clone = row_clone.replace(",", "");
+                        let split: Vec<&str> = row_clone.split_whitespace().collect();
+                        for s in split {
+                            if s.eq("lr") {
+                                lr_popped = true;
+                            }
+                        }
+                    }
                     else if move_lr_to_pc.is_match(row) {
                         unconditional_block = true;
+                    }
+                    else if move_lr_to_pc_cond.is_match(row) {
+                        conditional_return = true;
                     }
                     break;
                 }
@@ -242,9 +297,12 @@ impl BlockCalculator {
 
     //Finds the main routine and starts following the control flow
     pub fn solve_control_flow(&mut self, stack: Vec<(String, String)>) {
+        self.cycles = 0;
+        println!("----------------Starting new path--------------------------");
         self.block_stack = stack;
         let main_number = self.fn_map.get(&"main".to_string()).unwrap().clone();
         self.solve_fn_control_flow((main_number,0));
+        println!("finished solving control flow");
     } 
 
     //Tries to refollow the control flow as specified by the block stack
@@ -253,30 +311,36 @@ impl BlockCalculator {
         loop {
             println!("currently in block: {:?}", key);
             let mut current_block = self.block_map.get(&key).unwrap();
+            self.cycles += current_block.cycles;
             for c in current_block.calls.clone() {
-                if c == "klee_make_symbolic".to_string() {
+                /*if c == "klee_make_symbolic".to_string() {
+                    continue;
+                }*/
+                if !self.fn_map.contains_key(&c) {
+                    println!("################ Skipping unknown call: {} ################",c);
                     continue;
                 }
                 let fn_nr = self.fn_map.get(&c).unwrap().clone();
                 self.solve_fn_control_flow((fn_nr, 0));
             }
             current_block = self.block_map.get(&key).unwrap();
-            if current_block.successors.len() == 0 {
+            if current_block.successors.len() == 0 && !current_block.conditional_return{
                 return;
             }
-            else if current_block.successors.len() == 1 {
+            else if current_block.successors.len() == 1 && !current_block.conditional_return{
                 key = current_block.successors[0];
             }
             else {
+                assert!(current_block.successors.len() <= 2);
                 println!("performing conditional branch in: {} in function {}", current_block.llvmir_label, current_block.function);
                 while *self.block_stack.last().unwrap() != (current_block.function.clone(), current_block.llvmir_label.clone()){
-                    println!("popping 1");
                     println!("{:?}", self.block_stack.pop());
+                    //self.block_stack.pop();
                 }
                 //pop all the calls and find the next block
                 while *self.block_stack.last().unwrap() == (current_block.function.clone(), current_block.llvmir_label.clone()){
-                    println!("popping 2");
                     println!("{:?}", self.block_stack.pop());
+                    //self.block_stack.pop();
                 }
                 let next_tuple = &self.block_stack[self.block_stack.len() - 1];
                 println!("{:?}", next_tuple);
@@ -284,13 +348,22 @@ impl BlockCalculator {
                 let mut succ_found = false;
                 for s in &current_block.successors {
                     let b = self.block_map.get(s).unwrap();
-                    if b.function == next_tuple.0 && b.llvmir_label == next_tuple.1 {
+                    //if b.function == next_tuple.0 && b.llvmir_label == next_tuple.1 {
+                    if b.llvmir_label.len() < next_tuple.1.len() {
+                        continue;
+                    }
+                    if b.function == next_tuple.0 && b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1{
                         succ_found = true;
                         key = *s;
                     }
                 }
                 if !succ_found {
-                    panic!("could not find successor after block: {}", current_block.llvmir_label);
+                    if current_block.conditional_return {
+                        return;
+                    }
+                    println!("Could not find succcessor after block: {}", current_block.llvmir_label);
+                    key = current_block.successors[0];
+                    println!("branching to block: {:?}", key);
                 }
             }
         }
@@ -312,7 +385,7 @@ impl BlockCalculator {
                                 let x = file_content_read_res.unwrap();
                                 self.build_map_first_pass(&x);
                                 self.build_map_second_pass(&x);
-                                self.print_maps();
+                                //self.print_maps();
                                 return;
                             }
                         }

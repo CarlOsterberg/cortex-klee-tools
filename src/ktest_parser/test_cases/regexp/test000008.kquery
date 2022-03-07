@@ -1,0 +1,27 @@
+array re[7] : w32 -> w8 = symbolic
+(query [(Eq 94 (Read w8 0 re))
+         (Eq false
+             (Eq 0 N0:(Read w8 1 re)))
+         (Eq false
+             (Eq 42 N1:(Read w8 2 re)))
+         (Eq false
+             (And (Eq false (Eq 46 N0))
+                  (Eq false (Eq 104 N0))))
+         (Eq false (Eq 0 N1))
+         (Eq false
+             (Eq 42 N2:(Read w8 3 re)))
+         (Eq false
+             (And (Eq false (Eq 46 N1))
+                  (Eq false (Eq 101 N1))))
+         (Eq false (Eq 0 N2))
+         (Eq false
+             (Eq 42 N3:(Read w8 4 re)))
+         (Eq false
+             (And (Eq false (Eq 46 N2))
+                  (Eq false (Eq 108 N2))))
+         (Eq false (Eq 0 N3))
+         (Eq 42 (Read w8 5 re))
+         (Eq false (Eq 46 N3))
+         (Eq false
+             (Eq 0 (Read w8 6 re)))]
+        false)

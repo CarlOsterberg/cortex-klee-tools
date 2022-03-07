@@ -1,8 +1,11 @@
 //https://developer.arm.com/documentation/100166/0001/Programmers-Model/CortexM4-set-summary/Table-of-processor-CortexM4s?lang=en
 
-#[allow(dead_code)]
-#[derive(Clone,Debug)]
+#[allow(unused_imports)]
+use std::collections::HashMap;
 
+
+#[derive(Clone,Debug)]
+#[allow(dead_code)]
 pub enum CortexM4 {
     MOVreg,
     MOVW,
@@ -113,7 +116,25 @@ pub enum CortexM4 {
     DSB,
 }
 
+#[allow(dead_code)]
 impl CortexM4 {
+    pub fn start_sub_string(&self, full_string: &str, small_string: &str) -> bool {
+        if small_string.len() > full_string.len() {
+            return false;
+        }
+        let small_string_bytes = small_string.as_bytes();
+        let full_string_bytes = full_string.as_bytes();
+        let mut i = 0;
+        for b in small_string_bytes {
+            if *b != full_string_bytes[i] {
+                return false;
+            }
+            i += 1;
+        }
+        return true;
+    }
+
+
     pub fn get_upper(self, mut b:u32,n:u32,w:u32) -> u32 {
         let p=3;
         if b > p {

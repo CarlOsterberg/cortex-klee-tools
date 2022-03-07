@@ -1,9 +1,9 @@
-SExt : 8
+PHI : 4
 Ret : 3
-GetElementPtr : 9
-Br : 9
-ICmp : 7
-Load : 20
-Call : 8
-Store : 7
-Alloca : 8
+GetElementPtr : 4
+Br : 7
+ICmp : 8
+Load : 4
+Call : 12
+Select : 3
+Alloca : 1
