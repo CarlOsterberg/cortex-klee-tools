@@ -3,6 +3,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::collections::{HashMap, HashSet};
 
+#[allow(dead_code)]
 pub struct Block {
     function: String,
     llvmir_label: String,
@@ -12,6 +13,7 @@ pub struct Block {
     calls: Vec<String>,
 }
 
+#[allow(dead_code)]
 pub struct BlockCalculator {
     //(fn_nr, blk_nr) -> Block
     block_map: HashMap<(i32, i32), Block>,
@@ -61,6 +63,7 @@ pub fn init_other_branch_instructions() -> HashSet<String> {
     ret
 }
 
+#[allow(dead_code)]
 impl BlockCalculator {
 
     pub fn new() -> BlockCalculator {

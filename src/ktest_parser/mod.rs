@@ -32,6 +32,7 @@ pub struct Labels {
     pub labels: Vec<(String, String)>
 }
 
+#[allow(dead_code)]
 impl KtestData {
     pub fn new(file_name: String, bytes: Vec<u8>) -> Result<KtestData, String> {
         //read header
@@ -176,15 +177,16 @@ impl Instructions {
             }
         )
     }
-    pub fn getInstructions(self) -> Vec<(String,u32)> {
+    pub fn get_instructions(self) -> Vec<(String,u32)> {
         self.instr
     }
 
-    pub fn getFilename(self) -> String {
+    pub fn get_filename(self) -> String {
         self.file_name
     }
 }
 
+#[allow(dead_code)]
 impl Labels {
     pub fn new(file_name: String, file_contents: String) -> Result<Labels, String> {
         let mut labels = Vec::new();

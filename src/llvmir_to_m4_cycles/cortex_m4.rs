@@ -1,6 +1,6 @@
 //https://developer.arm.com/documentation/100166/0001/Programmers-Model/CortexM4-set-summary/Table-of-processor-CortexM4s?lang=en
 
-
+#[allow(dead_code)]
 #[derive(Clone,Debug)]
 
 pub enum CortexM4 {
@@ -114,7 +114,7 @@ pub enum CortexM4 {
 }
 
 impl CortexM4 {
-    pub fn getUpper(self, mut b:u32,n:u32,w:u32) -> u32 {
+    pub fn get_upper(self, mut b:u32,n:u32,w:u32) -> u32 {
         let p=3;
         if b > p {
             b = p;
@@ -230,7 +230,7 @@ impl CortexM4 {
         }
     }
 
-    pub fn getLower(self, b:u32,n:u32,w:u32) -> u32 {
+    pub fn get_lower(self, b:u32,n:u32,w:u32) -> u32 {
         let p=1;
         match self {
             CortexM4::MOVreg => 1,

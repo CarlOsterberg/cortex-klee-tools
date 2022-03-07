@@ -4,8 +4,8 @@ pub enum LlvmIr {
     Br,
     IndirectBr,
     Switch,
-    Unreachable,//dunno
-    Invoke,//dunno
+    _Unreachable,//dunno
+    _Invoke,//dunno
     Call,
     PHI,
     Select,
@@ -57,8 +57,9 @@ pub enum LlvmIr {
     AtomicCmpXchg,//borde crasha
 }
 
+#[allow(dead_code)]
 impl LlvmIr {
-    pub fn fromString(s: &str) -> Option<LlvmIr> {
+    pub fn from_string(s: &str) -> Option<LlvmIr> {
         match s {
             "Ret" => Some(LlvmIr::Ret),
             "Br" => Some(LlvmIr::Br),
