@@ -3,6 +3,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::collections::{HashMap, HashSet};
 
+use crate::llvmir_to_m4_cycles::cortex_m4::StringToCortexM4;
+
 #[allow(dead_code)]
 pub struct Block {
     function: String,
@@ -24,6 +26,7 @@ pub struct BlockCalculator {
     other_branch_instructions: HashSet<String>,
     block_stack: Vec<(String, String)>,
     pub cycles: u64,
+    string_to_cycles: StringToCortexM4,
 }
 
 pub fn init_conditional_branch_instructions() -> HashSet<String> {
@@ -77,6 +80,7 @@ impl BlockCalculator {
             other_branch_instructions: init_other_branch_instructions(),
             block_stack: Vec::new(),
             cycles: 0,
+            string_to_cycles: StringToCortexM4::new(),
         }
 
     }
@@ -168,8 +172,8 @@ impl BlockCalculator {
                 self.block_map.insert((current_fn_nr, current_block_nr), prev_block);
                 block_cycles = 0;
             }
-            else if asm_instruction.is_match(row) {
-                block_cycles += 1;
+            if asm_instruction.is_match(row) {
+                block_cycles += self.string_to_cycles.get_upper_bound_cycles(row.split_whitespace().collect::<Vec<&str>>()[0]) as u64;
             }
         }
     }
