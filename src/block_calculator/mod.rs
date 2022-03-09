@@ -14,6 +14,7 @@ pub struct Block {
     successors: Vec<(i32, i32)>,
     calls: Vec<String>,
     conditional_return: bool,
+    direct_label: bool,
 }
 
 #[allow(dead_code)]
@@ -101,6 +102,7 @@ impl BlockCalculator {
         let mut current_block_nr = -1;
         let mut current_fn_nr = -1;
         let mut block_cycles: u64 = 0;
+        let mut label_used = false;
         let rows: Vec<&str> = file_contents.split("\n").collect();
         for row in rows {
             if asm_fn_def.is_match(row) {
@@ -111,6 +113,7 @@ impl BlockCalculator {
                 }
                 current_fn = fn_name;
                 current_block_label = "initial_fn_block".to_string();
+                label_used = false;
                 current_fn_nr += 1;
                 self.fn_map.insert(current_fn.clone(), current_fn_nr);
                 current_block_nr = -1;
@@ -125,7 +128,9 @@ impl BlockCalculator {
                         successors: Vec::new(),
                         calls: Vec::new(),
                         conditional_return: false,
+                        direct_label: !label_used,
                     };
+                    label_used = true;
                     self.block_map.insert((current_fn_nr, current_block_nr), prev_block);
                 }
                 block_cycles = 0;
@@ -136,6 +141,7 @@ impl BlockCalculator {
                     let label = split[split.len()-1];
                     //current_block_label = format!("%{}", label).to_string();
                     current_block_label = label.to_string();
+                    label_used = false;
                 }
             }
             else if bb.is_match(row) {
@@ -148,7 +154,9 @@ impl BlockCalculator {
                         successors: Vec::new(),
                         calls: Vec::new(),
                         conditional_return: false,
+                        direct_label: !label_used,
                     };
+                    label_used = true;
                     self.block_map.insert((current_fn_nr, current_block_nr), prev_block);
                 }
                 block_cycles = 0;
@@ -159,6 +167,7 @@ impl BlockCalculator {
                     let label = split[split.len()-1];
                     //current_block_label = format!("%{}", label).to_string();
                     current_block_label = label.to_string();
+                    label_used = false;
                 }
             }
             else if fn_end.is_match(row){
@@ -170,7 +179,9 @@ impl BlockCalculator {
                     successors: Vec::new(),
                     calls: Vec::new(),
                     conditional_return: false,
+                    direct_label: !label_used,
                 };
+                label_used = true;
                 self.block_map.insert((current_fn_nr, current_block_nr), prev_block);
                 block_cycles = 0;
             }
@@ -395,8 +406,18 @@ impl BlockCalculator {
                         return;
                     }
                     println!("Could not find succcessor after block: {}", current_block.llvmir_label);
-                    key = current_block.successors[0];
-                    println!("branching to block: {:?}", key);
+                    //key = current_block.successors[0];
+                    if self.block_map.get(&current_block.successors[0]).unwrap().direct_label {
+                        key = current_block.successors[1];
+                        println!("branching to block: {:?}", key);
+                    }
+                    else if self.block_map.get(&current_block.successors[1]).unwrap().direct_label {
+                        key = current_block.successors[0];
+                        println!("branching to block: {:?}", key);
+                    }
+                    else {
+                        panic!("Cannot solve control flow");
+                    }
                 }
             }
         }
@@ -418,7 +439,7 @@ impl BlockCalculator {
                                 let x = file_content_read_res.unwrap();
                                 self.build_map_first_pass(&x);
                                 self.build_map_second_pass(&x);
-                                //self.print_maps();
+                                self.print_maps();
                                 return;
                             }
                         }
@@ -435,6 +456,7 @@ impl BlockCalculator {
         for (key, value) in &self.block_map {
             println!("map key is ({}, {})", key.0, key.1);
             println!("{}", value.llvmir_label);
+            println!("direct label: {}", value.direct_label);
             if value.successors.len() > 0 {
                 for s in &value.successors {
                     println!("successor: ({}, {})", s.0, s.1);
