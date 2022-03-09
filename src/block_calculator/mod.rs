@@ -283,7 +283,6 @@ impl BlockCalculator {
                         panic!("unimplemented");
                     }
                     else if pop_single.is_match(row) {
-                        println!("pop_single");
                         let split: Vec<&str> = row.split_whitespace().collect();
                         if split[1].eq("lr") {
                             lr_popped = true;
@@ -300,7 +299,6 @@ impl BlockCalculator {
                         }
                     }
                     else if pop_multiple.is_match(row) {
-                        println!("pop multiple");
                         let row_clone = row.clone();
                         let row_clone = row_clone.replace("{", "");
                         let row_clone = row_clone.replace("}", "");
@@ -308,7 +306,6 @@ impl BlockCalculator {
                         let split: Vec<&str> = row_clone.split_whitespace().collect();
                         println!("new pop");
                         for s in split {
-                            println!("!!!!!!!!!!!!!!!!!!!!!!!!!  {}", s);
                             if s.eq("lr") {
                                 lr_popped = true;
                             }
@@ -367,7 +364,6 @@ impl BlockCalculator {
                 self.solve_fn_control_flow((fn_nr, 0));
             }
             current_block = self.block_map.get(&key).unwrap();
-            println!("still in block: {:?}", key);
             if current_block.successors.len() == 0 && !current_block.conditional_return{
                 return;
             }
@@ -387,7 +383,7 @@ impl BlockCalculator {
                     //self.block_stack.pop();
                 }
                 let next_tuple = &self.block_stack[self.block_stack.len() - 1];
-                println!("{:?}", next_tuple);
+                println!("target tuple: {:?}", next_tuple);
                 //let next_tuple = self.block_stack.pop().unwrap();
                 let mut succ_found = false;
                 for s in &current_block.successors {
@@ -439,7 +435,7 @@ impl BlockCalculator {
                                 let x = file_content_read_res.unwrap();
                                 self.build_map_first_pass(&x);
                                 self.build_map_second_pass(&x);
-                                self.print_maps();
+                                //self.print_maps();
                                 return;
                             }
                         }
