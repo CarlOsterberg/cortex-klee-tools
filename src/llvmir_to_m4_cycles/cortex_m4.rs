@@ -497,12 +497,18 @@ impl StringToCortexM4 {
     }
 
     pub fn get_upper_bound_cycles(&self, instr: &str) -> u32{
-        let cc_removed = self.remove_conditional_code(instr);
+        let width_removed = self.remove_width_spec(instr);
+        let cc_removed = self.remove_conditional_code(&width_removed);
         if self.instr_map.contains_key(&cc_removed) {
             return self.instr_map.get(&cc_removed).unwrap().clone().get_upper(3, 1, 1) as u32;
         }
+        let s_removed = self.remove_s(&width_removed);
+        if self.instr_map.contains_key(&s_removed) {
+            return self.instr_map.get(&s_removed).unwrap().clone().get_upper(3, 1, 1) as u32;
+        }
         else {
-            panic!("unrecognized instruction: {}", instr);
+            println!("@@@@@@@@@@@@@@@@@@@@ unrecognized instruction: {} @@@@@@@@@@@@@@@@@@@@ ", instr);
+            return 1;
         }
     }
 
@@ -525,6 +531,21 @@ impl StringToCortexM4 {
                 return "mls".to_string();
             }
             return ret.to_string();
+        }
+        return instruction.to_string();
+    }
+
+    fn remove_s(&self, instruction: &str) -> String {
+        if instruction.ends_with("s"){
+            return instruction[0..instruction.len()-1].to_string();
+        }
+        instruction.to_string()
+    }
+
+    fn remove_width_spec(&self, instruction: &str) -> String {
+        let split: Vec<&str> = instruction.split(".").collect();
+        if split.len() == 2 {
+            return split[0].to_string();
         }
         return instruction.to_string();
     }

@@ -21,9 +21,10 @@
 	.eabi_attribute	14, 0	@ Tag_ABI_PCS_R9_use
 	.file	"get_sign.c"
 	.globl	get_sign                        @ -- Begin function get_sign
-	.p2align	2
+	.p2align	1
 	.type	get_sign,%function
-	.code	32                              @ @get_sign
+	.code	16                              @ @get_sign
+	.thumb_func
 get_sign:
 .Lfunc_begin0:
 	.file	1 "/home/isak/Documents/xj/klee-fork/klee/examples/get_sign" "get_sign.c"
@@ -33,32 +34,32 @@ get_sign:
 	.cfi_startproc
 @ %bb.0:
 	.pad	#8
-	sub	sp, sp, #8
+	sub	sp, #8
 	.cfi_def_cfa_offset 8
+	str	r0, [sp]
 .Ltmp0:
 	.loc	1 8 7 prologue_end              @ get_sign.c:8:7
-	cmp	r0, #0
-	str	r0, [sp]
-	beq	.LBB0_2
+	cbz	r0, .LBB0_2
 @ %bb.1:                                @ %.customlabel1
 .Ltmp1:
 	.loc	1 11 7                          @ get_sign.c:11:7
 	ldr	r0, [sp]
 .Ltmp2:
 	.loc	1 11 7 is_stmt 0                @ get_sign.c:11:7
-	cmn	r0, #1
+	cmp.w	r0, #-1
+	ite	gt
 	movgt	r0, #1
-	mvnle	r0, #0
+	movle.w	r0, #-1
 	b	.LBB0_3
 .LBB0_2:                                @ %.customlabel0
 	.loc	1 0 7                           @ get_sign.c:0:7
-	mov	r0, #0
+	movs	r0, #0
 .LBB0_3:                                @ %.customlabel4
 	str	r0, [sp, #4]
 	.loc	1 15 1 is_stmt 1                @ get_sign.c:15:1
 	ldr	r0, [sp, #4]
-	add	sp, sp, #8
-	mov	pc, lr
+	add	sp, #8
+	bx	lr
 .Ltmp3:
 .Lfunc_end0:
 	.size	get_sign, .Lfunc_end0-get_sign
@@ -66,32 +67,34 @@ get_sign:
 	.fnend
                                         @ -- End function
 	.globl	main                            @ -- Begin function main
-	.p2align	2
+	.p2align	1
 	.type	main,%function
-	.code	32                              @ @main
+	.code	16                              @ @main
+	.thumb_func
 main:
 .Lfunc_begin1:
 	.loc	1 17 0                          @ get_sign.c:17:0
 	.fnstart
 	.cfi_startproc
 @ %bb.0:
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r7, lr}
+	push	{r7, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
-	.setfp	r11, sp
-	mov	r11, sp
-	.cfi_def_cfa_register r11
+	.cfi_offset r7, -8
+	.setfp	r7, sp
+	mov	r7, sp
+	.cfi_def_cfa_register r7
 	.pad	#16
-	sub	sp, sp, #16
-	mov	r0, #0
+	sub	sp, #16
+	movs	r0, #0
 .Ltmp4:
 	.loc	1 19 3 prologue_end             @ get_sign.c:19:3
-	mov	r2, #4
-	mov	r3, #0
-	str	r0, [r11, #-4]
-	ldr	r0, .LCPI1_0
+	movs	r2, #4
+	movs	r3, #0
+	str	r0, [sp, #12]
+	movw	r0, :lower16:.L.str
+	movt	r0, :upper16:.L.str
 	str	r0, [sp]
 	add	r0, sp, #8
 	bl	klee_make_symbolic
@@ -100,15 +103,9 @@ main:
 	.loc	1 20 10 is_stmt 0               @ get_sign.c:20:10
 	bl	get_sign
 	.loc	1 20 3                          @ get_sign.c:20:3
-	mov	sp, r11
-	pop	{r11, lr}
-	mov	pc, lr
+	add	sp, #16
+	pop	{r7, pc}
 .Ltmp5:
-	.p2align	2
-@ %bb.1:
-	.loc	1 0 3                           @ get_sign.c:0:3
-.LCPI1_0:
-	.long	.L.str
 .Lfunc_end1:
 	.size	main, .Lfunc_end1-main
 	.cfi_endproc
@@ -245,7 +242,7 @@ main:
 	.long	.Lfunc_begin0                   @ DW_AT_low_pc
 	.long	.Lfunc_end0-.Lfunc_begin0       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
-	.byte	91
+	.byte	87
 	.long	.Linfo_string3                  @ DW_AT_name
 	.byte	1                               @ DW_AT_decl_file
 	.byte	7                               @ DW_AT_decl_line
@@ -265,7 +262,7 @@ main:
 	.long	.Lfunc_begin1                   @ DW_AT_low_pc
 	.long	.Lfunc_end1-.Lfunc_begin1       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
-	.byte	91
+	.byte	87
 	.long	.Linfo_string5                  @ DW_AT_name
 	.byte	1                               @ DW_AT_decl_file
 	.byte	17                              @ DW_AT_decl_line

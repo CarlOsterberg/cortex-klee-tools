@@ -104,15 +104,15 @@ mod tests {
         assert!(asm_fn_def.is_match(asm_fn_def_test));
 
         let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();
-        let asm_instruction_test = " add r1, r2";
+        let asm_instruction_test = " add.w r1, r2";
         assert!(asm_instruction.is_match(asm_instruction_test));
 
-        let move_lr_to_pc = Regex::new(r"^(\s*)mov(\s*)pc(\s*),(\s*)lr").unwrap();
-        let move_lr_to_pc_test = "	mov	pc, lr        ";
+        let move_lr_to_pc = Regex::new(r"^(\s*)mov(s)*(.w)*(.n)*(\s*)pc(\s*),(\s*)lr").unwrap();
+        let move_lr_to_pc_test = "	movs.w	pc, lr        ";
         assert!(move_lr_to_pc.is_match(move_lr_to_pc_test));
 
-        let move_lr_to_pc_cond = Regex::new(r"^(\s*)mov[a-z]+(\s*)pc(\s*),(\s*)lr").unwrap();
-        let move_lr_to_pc_cond_test = "	moveq	pc, lr        ";
+        let move_lr_to_pc_cond = Regex::new(r"^(\s*)mov[a-z]+(.w)*(.n)*(\s*)pc(\s*),(\s*)lr").unwrap();
+        let move_lr_to_pc_cond_test = "	moveq.n	pc, lr        ";
         assert!(move_lr_to_pc_cond.is_match(move_lr_to_pc_cond_test));
 
         let pop = Regex::new(r"(^\s*)pop").unwrap();
@@ -123,12 +123,16 @@ mod tests {
         let pop_cond_test = "	popne	{r4, r5, r6, r7, r11, lr        ";
         assert!(pop_cond.is_match(pop_cond_test));
 
-        let pop_single = Regex::new(r"^(\s*)pop([a-z]*)(\s*)(?P<x>[a-z0-9]+)").unwrap();
-        let pop_single_test = "      pop    r11      ";
+        let pop_s = Regex::new(r"^(\s*)pops").unwrap();
+        let pop_s_test = "      popsne.w {pc, lr}";
+        assert!(pop_s.is_match(pop_s_test));
+
+        let pop_single = Regex::new(r"^(\s*)pop([a-z]*)(.w)*(.n)*(\s+)(?P<x>[a-z0-9]+)").unwrap();
+        let pop_single_test = "      	pophs	r7        ";
         assert!(pop_single.is_match(pop_single_test));
 
-        let pop_multiple = Regex::new(r"^(\s*)pop([a-z]*)(\s*)[{]").unwrap();
-        let pop_multiple_test = "   popne   {r11, lr}";
+        let pop_multiple = Regex::new(r"^(\s*)pop([a-z]*)(.w)*(.n)*(\s*)[{]").unwrap();
+        let pop_multiple_test = "   pop   {r11, lr}";
         assert!(pop_multiple.is_match(pop_multiple_test));
 
         let block_label = Regex::new(r"@(\s*)%(?P<x>[^:]+)(\s)*$").unwrap();
