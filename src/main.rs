@@ -44,14 +44,22 @@ fn main() {
     dir4.push("regexp");
 
     run_labeler_and_bc(&dir2, "assembly_reg_ex.ll".to_string(), &dir4);
+    //run_labeler(&dir2, "rust_arm_assembly.ll".to_string());
 
+}
+
+pub fn run_labeler(path: &PathBuf, file_name: String) {
+    //Run the labeling tool
+    let mut labeler = llvmir_labeler::Labeler::new();
+    let _replaced_string = labeler.label_file(path, &file_name).unwrap();
+    labeler.save_file(path, &file_name);
 }
 
 pub fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &PathBuf) {
     //Run the labeling tool
     let mut labeler = llvmir_labeler::Labeler::new();
-    let replaced_string = labeler.label_file(path, &file_name).unwrap();
-    labeler.save_file(path, &file_name, replaced_string);
+    let _replaced_string = labeler.label_file(path, &file_name).unwrap();
+    labeler.save_file(path, &file_name);
 
     //Read the label files
     let labels = ktest_parser::read_labels(path_to_label_files).unwrap();

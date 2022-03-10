@@ -1,5 +1,3 @@
-
-
 ; ModuleID = 'Regexp.bc'
 source_filename = "Regexp.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
@@ -275,3 +273,5 @@ attributes #4 = { nounwind }
 !98 = !DILocation(line: 18, column: 30, scope: !79)
 !99 = !DILocation(line: 18, column: 38, scope: !79)
 !100 = !DILocation(line: 20, column: 1, scope: !79)
+
+
