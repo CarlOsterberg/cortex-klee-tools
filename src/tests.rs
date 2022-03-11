@@ -99,8 +99,8 @@ mod tests {
         let bb_test = "         @       %bb.2:                                @ %.customlabel0";
         assert!(bb.is_match(bb_test));
 
-        let asm_fn_def = Regex::new(r"^(?P<x>[^.\s]+):").unwrap();
-        let asm_fn_def_test = "-24vt:    afarf";
+        let asm_fn_def = Regex::new(r"^(?P<x>[^.])(?P<y>[^\s]+):").unwrap();
+        let asm_fn_def_test = "24.vt:    afarf";
         assert!(asm_fn_def.is_match(asm_fn_def_test));
 
         let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();

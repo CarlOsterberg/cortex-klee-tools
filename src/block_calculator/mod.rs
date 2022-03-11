@@ -92,7 +92,7 @@ impl BlockCalculator {
     pub fn build_map_first_pass(&mut self, file_contents: &String) {
         let lbb = Regex::new(r"^(\s*).LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
         let bb = Regex::new(r"^(\s*)@(\s*)%bb.(?P<x>[0-9]+):").unwrap();
-        let asm_fn_def = Regex::new(r"^(?P<x>[^.\s]+):").unwrap();
+        let asm_fn_def = Regex::new(r"^(?P<x>[^.\s])(?P<y>[^\s]+):").unwrap();
         let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();
         let fn_end = Regex::new(r"^(\s*).fnend").unwrap();
         let block_label = Regex::new(r"@(\s*)%(?P<x>[^:]+)(\s)*$").unwrap();
@@ -108,7 +108,8 @@ impl BlockCalculator {
             if asm_fn_def.is_match(row) {
                 let mut fn_name = "".to_string();
                 for cap in asm_fn_def.captures_iter(row){
-                    fn_name = cap[1].to_string().clone();
+                    fn_name = format!("{}{}", cap[1].to_string().clone(), cap[2].to_string().clone());
+                    println!("fn_name: {}", fn_name);
                     break;
                 }
                 current_fn = fn_name;
@@ -197,7 +198,7 @@ impl BlockCalculator {
         let lbb = Regex::new(r"^(\s*).LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
         let lbb_use = Regex::new(r".LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
         let bb = Regex::new(r"^(\s*)@(\s*)%bb.(?P<x>[0-9]+):").unwrap();
-        let asm_fn_def = Regex::new(r"^(?P<x>[^.\s]+):").unwrap();
+        let asm_fn_def = Regex::new(r"^(?P<x>[^.\s])(?P<y>[^\s]+):").unwrap();
         let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();
         let move_lr_to_pc = Regex::new(r"^(\s*)mov(s)*(.w)*(.n)*(\s*)pc(\s*),(\s*)lr").unwrap();
         let move_lr_to_pc_cond = Regex::new(r"^(\s*)mov[a-z]+(.w)*(.n)*(\s*)pc(\s*),(\s*)lr").unwrap();
@@ -279,8 +280,8 @@ impl BlockCalculator {
                             }
                         }
                     }
-                    else if self.other_branch_instructions.contains(&cap[1].to_string()){
-                        panic!("unimplemented");
+                    else if self.other_branch_instructions.contains(&cap[2].to_string()){
+                        println!("unimplemented");
                     }
                     else if pop_single.is_match(row) {
                         let split: Vec<&str> = row.split_whitespace().collect();
@@ -304,7 +305,6 @@ impl BlockCalculator {
                         let row_clone = row_clone.replace("}", "");
                         let row_clone = row_clone.replace(",", "");
                         let split: Vec<&str> = row_clone.split_whitespace().collect();
-                        println!("new pop");
                         for s in split {
                             if s.eq("lr") {
                                 lr_popped = true;
@@ -446,6 +446,56 @@ impl BlockCalculator {
             }
             Err(msg) => panic!("{}", msg.to_string()),
         }
+    }
+
+    pub fn assert_analyzable_block_structure(&mut self) {
+        let mut ok_count = 0;
+        let mut fail_count = 0;
+        for (key, value) in &self.block_map {
+            assert!(value.successors.len() <= 2);
+            if value.successors.len() == 2 {
+                if !self.block_map.contains_key(&value.successors[0]) || !self.block_map.contains_key(&value.successors[1]) {
+                    println!("could not find successor: {:?} or {:?} after block {:?}", value.successors[0], value.successors[1], key);
+                    continue;
+                }
+                let succ_0_direct = self.block_map.get(&value.successors[0]).unwrap().direct_label;
+                let succ_1_direct = self.block_map.get(&value.successors[1]).unwrap().direct_label;
+                //let key_string = format!("({},{})", key.0, key.1);
+                //assert!(succ_0_direct || succ_1_direct, "{}", key_string);
+                if succ_0_direct || succ_1_direct {
+                    ok_count += 1;
+                }
+                else {
+                    if self.block_map.get(&value.successors[1]).unwrap().successors.len() <= 1 || 
+                            self.block_map.get(&value.successors[0]).unwrap().successors.len() <= 1{
+                        if self.block_map.get(&value.successors[0]).unwrap().successors.len() == 1 {
+                            let temp = self.block_map.get(&value.successors[0]).unwrap().successors[0];
+                            let key_string = format!("({},{})", temp.0, temp.1);
+                            //assert!(self.block_map.get(&temp).unwrap().direct_label, "{}", key_string);
+                            if !self.block_map.get(&temp).unwrap().direct_label {
+                                println!("{}", key_string);
+                            }
+                        }
+                        if self.block_map.get(&value.successors[1]).unwrap().successors.len() == 1 {
+                            let temp = self.block_map.get(&value.successors[1]).unwrap().successors[0];
+                            let key_string = format!("({},{})", temp.0, temp.1);
+                            //assert!(self.block_map.get(&temp).unwrap().direct_label, "{}", key_string);
+                            if !self.block_map.get(&temp).unwrap().direct_label {
+                                println!("{}", key_string);
+                            }
+                        }
+                        ok_count += 1;
+                        println!("recovered from a block");
+                    }
+                    else {
+                        let key_string = format!("({},{})", key.0, key.1);
+                        println!("{}", key_string);
+                        fail_count += 1;
+                    }
+                }
+            }
+        }
+        println!("ok: {}, fail: {}", ok_count, fail_count);
     }
 
     pub fn print_maps(&mut self){

@@ -43,9 +43,16 @@ fn main() {
     dir4.push("test_cases");
     dir4.push("regexp");
 
-    run_labeler_and_bc(&dir2, "assembly_reg_ex.ll".to_string(), &dir4);
+    //run_labeler_and_bc(&dir2, "assembly_reg_ex.ll".to_string(), &dir4);
     //run_labeler(&dir2, "rust_arm_assembly.ll".to_string());
+    check_block_structure(&dir2, "rust_arm_assembly_labeled.s".to_string());
 
+}
+
+pub fn check_block_structure(path: &PathBuf, file_name: String) {
+    let mut bc = block_calculator::BlockCalculator::new();
+    bc.analyze_file_block_structure(path, &file_name);
+    bc.assert_analyzable_block_structure();
 }
 
 pub fn run_labeler(path: &PathBuf, file_name: String) {
