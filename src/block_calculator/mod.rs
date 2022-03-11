@@ -109,7 +109,6 @@ impl BlockCalculator {
                 let mut fn_name = "".to_string();
                 for cap in asm_fn_def.captures_iter(row){
                     fn_name = format!("{}{}", cap[1].to_string().clone(), cap[2].to_string().clone());
-                    println!("fn_name: {}", fn_name);
                     break;
                 }
                 current_fn = fn_name;
@@ -209,6 +208,7 @@ impl BlockCalculator {
         let mut unconditional_block = false;
         let mut lr_popped = false;
         let mut conditional_return = false;
+        let mut table_branch = false;
         let mut current_block_nr = -1;
         let mut current_fn_nr = -1;
         let rows: Vec<&str> = file_contents.split("\n").collect();
@@ -218,6 +218,7 @@ impl BlockCalculator {
                 current_block_nr = -1;
                 unconditional_block = false;
                 conditional_return = false;
+                table_branch = false;
                 lr_popped = false;
             }
             else if lbb.is_match(row) {
@@ -227,6 +228,10 @@ impl BlockCalculator {
                     old_block.conditional_return = conditional_return;
                 }
                 current_block_nr += 1;
+                //Table branch targets have been added
+                if unconditional_block {
+                    table_branch = false;
+                }
                 unconditional_block = false;
                 conditional_return = false;
                 lr_popped = false;
@@ -238,9 +243,25 @@ impl BlockCalculator {
                     old_block.conditional_return = conditional_return;
                 }
                 current_block_nr += 1;
+                //Table branch targets have been added
+                if unconditional_block {
+                    table_branch = false;
+                }
                 unconditional_block = false;
                 conditional_return = false;
                 lr_popped = false;
+            }
+            else if lbb_use.is_match(row) && table_branch {
+                let period_split: Vec<&str> = row.split(".").collect();
+                let dash_split: Vec<&str> = period_split[2].split("-").collect();
+                let lbb_split: Vec<&str> = dash_split[0].split("LBB").collect();
+                let nr_split: Vec<&str> = lbb_split[1].split("_").collect();
+                let b_fn_nr = nr_split[0].parse().expect("expected number in LBB target");
+                let b_blk_nr = nr_split[1].parse().expect("expected number in LBB target");
+                let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
+                old_block.successors.push((b_fn_nr, b_blk_nr));
+                //Don't add next block to successors
+                unconditional_block = true;
             }
             else if asm_instruction.is_match(row) {
                 for cap in asm_instruction.captures_iter(row){
@@ -253,9 +274,9 @@ impl BlockCalculator {
                         old_block.successors.push((b_fn_nr, b_blk_nr));
                     }
                     else if self.unconditional_branch_instructions.contains(&cap[2].to_string()){
-                        if lbb_use.is_match(row) {
+                        if lbb_use.is_match(row) && table_branch{
                             let lbb_split: Vec<&str> = row.split("LBB").collect();
-                            let nr_split: Vec<&str> = lbb_split[1].split("_").collect();
+                            let nr_split: Vec<&str> = lbb_split[1].split("_").collect();    
                             let b_fn_nr = nr_split[0].parse().expect("expected number in LBB target");
                             let b_blk_nr = nr_split[1].parse().expect("expected number in LBB target");
                             let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
@@ -281,7 +302,8 @@ impl BlockCalculator {
                         }
                     }
                     else if self.other_branch_instructions.contains(&cap[2].to_string()){
-                        println!("unimplemented");
+                        //Collect branch targets in next block
+                        table_branch = true;                        
                     }
                     else if pop_single.is_match(row) {
                         let split: Vec<&str> = row.split_whitespace().collect();
@@ -452,7 +474,6 @@ impl BlockCalculator {
         let mut ok_count = 0;
         let mut fail_count = 0;
         for (key, value) in &self.block_map {
-            assert!(value.successors.len() <= 2);
             if value.successors.len() == 2 {
                 if !self.block_map.contains_key(&value.successors[0]) || !self.block_map.contains_key(&value.successors[1]) {
                     println!("could not find successor: {:?} or {:?} after block {:?}", value.successors[0], value.successors[1], key);
@@ -460,20 +481,22 @@ impl BlockCalculator {
                 }
                 let succ_0_direct = self.block_map.get(&value.successors[0]).unwrap().direct_label;
                 let succ_1_direct = self.block_map.get(&value.successors[1]).unwrap().direct_label;
-                //let key_string = format!("({},{})", key.0, key.1);
-                //assert!(succ_0_direct || succ_1_direct, "{}", key_string);
+                //One of the successors is directly labeled
                 if succ_0_direct || succ_1_direct {
                     ok_count += 1;
                 }
                 else {
                     if self.block_map.get(&value.successors[1]).unwrap().successors.len() <= 1 || 
                             self.block_map.get(&value.successors[0]).unwrap().successors.len() <= 1{
+                        let mut ok1 = true;
+                        let mut ok2 = true;
                         if self.block_map.get(&value.successors[0]).unwrap().successors.len() == 1 {
                             let temp = self.block_map.get(&value.successors[0]).unwrap().successors[0];
                             let key_string = format!("({},{})", temp.0, temp.1);
                             //assert!(self.block_map.get(&temp).unwrap().direct_label, "{}", key_string);
                             if !self.block_map.get(&temp).unwrap().direct_label {
                                 println!("{}", key_string);
+                                ok1 = false;
                             }
                         }
                         if self.block_map.get(&value.successors[1]).unwrap().successors.len() == 1 {
@@ -482,16 +505,28 @@ impl BlockCalculator {
                             //assert!(self.block_map.get(&temp).unwrap().direct_label, "{}", key_string);
                             if !self.block_map.get(&temp).unwrap().direct_label {
                                 println!("{}", key_string);
+                                ok2 = false;
                             }
                         }
-                        ok_count += 1;
-                        println!("recovered from a block");
+                        //At least one of the successors have only one exit to a directly labeled block or return
+                        if ok1 || ok2 {
+                            ok_count += 1;
+                            println!("recovered from a block");
+                        }
+                        else {
+                            fail_count += 1;
+                        }
                     }
                     else {
                         let key_string = format!("({},{})", key.0, key.1);
                         println!("{}", key_string);
                         fail_count += 1;
                     }
+                }
+            }
+            else if value.successors.len() > 2 {
+                for s in &value.successors {
+                    assert!(self.block_map.get(&s).unwrap().direct_label);
                 }
             }
         }
