@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::fs;
+use std::{fs, cmp};
 use std::path::PathBuf;
 use std::collections::{HashMap, HashSet};
 
@@ -28,6 +28,12 @@ pub struct BlockCalculator {
     block_stack: Vec<(String, String)>,
     pub cycles: u64,
     string_to_cycles: StringToCortexM4,
+}
+
+pub struct Path{
+    label: String,
+    cycles: u64,
+    key: (i32, i32),
 }
 
 pub fn init_conditional_branch_instructions() -> HashSet<String> {
@@ -464,7 +470,74 @@ impl BlockCalculator {
                         println!("branching to block: {:?}", key);
                     }
                     else {
-                        panic!("Cannot solve control flow");
+                        //Explore ahead to try to find the label
+                        assert!(current_block.successors.len() == 2);
+                        println!("exploring ahead to find the label");
+
+                        let first = self.explore_paths_ahead(&current_block.successors[0], 0);
+                        let second = self.explore_paths_ahead(&current_block.successors[1], 0);
+
+                        let mut first_contains = false;
+                        let mut second_contains = false;
+
+                        let mut first_key = (0,0);
+                        let mut second_key = (0,0);
+
+                        let mut first_cycles = 0;
+                        let mut second_cycles = 0;
+
+                        for p in first.1 {
+                            if p.label[0..next_tuple.1.len()] == next_tuple.1 {
+                                first_contains = true;
+                                first_key = p.key;
+                                first_cycles = p.cycles;
+                            }
+                        }
+
+                        for p in second.1 {
+                            if p.label[0..next_tuple.1.len()] == next_tuple.1 {
+                                second_contains = true;
+                                second_key = p.key;
+                                second_cycles = p.cycles;
+                            }
+                        }
+
+                        if first_contains && second_contains {
+                            println!("Two paths to the target label, selecting the longer path");
+                            if first_cycles > second_cycles {
+                                key = first_key;
+                                self.cycles += first_cycles;
+                            }
+                            else {
+                                key = second_key;
+                                self.cycles += second_cycles
+                            }
+                        }
+                        else if first_contains {
+                            key = first_key;
+                            self.cycles += first_cycles;
+                        }
+                        else if second_contains {
+                            key = second_key;
+                            self.cycles += second_cycles;
+                        }
+                        else {
+                            println!("could not find label, attempting return");
+                            if first.0 && second.0 {
+                                println!("two paths can return, selecting the longer one");
+                                self.cycles += cmp::max(first.2, second.2);
+                            }
+                            else if first.0 {
+                                self.cycles += first.2;
+                            }
+                            else if second.0 {
+                                self.cycles += second.2;
+                            }
+                            else {
+                                panic!("could not return");
+                            }
+                            return;
+                        }
                     }
                 }
             }
@@ -500,35 +573,45 @@ impl BlockCalculator {
         }
     }
 
-    pub fn explore_paths_ahead(&self, key: &(i32, i32)) -> (bool, Vec<String>) {
+    pub fn explore_paths_ahead(&self, key: &(i32, i32), prev_cycles: u64) -> (bool, Vec<Path>, u64) {
         let mut can_return = false;
-        let mut label_vec = Vec::new();
+        let mut path_vec = Vec::new();
         let current_block = self.block_map.get(key).unwrap();
         //Direct label found, base-case
         if current_block.direct_label {
-            label_vec.push(current_block.llvmir_label.clone());
-            return (false, label_vec);
+            let path = Path {
+                label: current_block.llvmir_label.clone(),
+                cycles: prev_cycles,
+                key: *key,
+            };
+            path_vec.push(path);
+            return (false, path_vec, 0);
         }
-        //assert!(current_block.successors.len() <= 2);
         //Unconditional return in not directly labeled block
         if current_block.successors.len() == 0 {
-            return (true, label_vec);
+            return (true, path_vec, prev_cycles + current_block.cycles);
         }
         
+        let mut cycles_to_return = 0;
+
         if current_block.conditional_return {
             can_return = true;
+            cycles_to_return = prev_cycles + current_block.cycles;
         }
         for s in &current_block.successors {
-            let res = self.explore_paths_ahead(s);
+            let res = self.explore_paths_ahead(s, prev_cycles + current_block.cycles);
             if res.0 {
                 can_return = true;
+                if res.2 > cycles_to_return {
+                    cycles_to_return = res.2;
+                }
             }
-            for l in res.1 {
-                label_vec.push(l);
+            for p in res.1 {
+                path_vec.push(p);
             }
         }
 
-        return (can_return, label_vec);
+        return (can_return, path_vec, cycles_to_return);
 
     }
 
@@ -548,20 +631,20 @@ impl BlockCalculator {
                     ok_count += 1;
                 }
                 else {
-                    let first = self.explore_paths_ahead(&value.successors[0]);
-                    let second = self.explore_paths_ahead(&value.successors[1]);
+                    let first = self.explore_paths_ahead(&value.successors[0], 0);
+                    let second = self.explore_paths_ahead(&value.successors[1], 0);
                     //only one path can return;
                     assert!(!(first.0 && second.0));
                     println!("exploring ahead in {:?}", key);
                     let mut first_set = HashSet::new();
-                    for l in first.1 {
-                        println!("in first: {}", l);
-                        first_set.insert(l);
+                    for p in first.1 {
+                        println!("in first: {}", p.label);
+                        first_set.insert(p.label);
                     }
                     let mut failed = false;
-                    for l in second.1 {
-                        println!("in second: {}", l);
-                        if first_set.contains(&l) {
+                    for p in second.1 {
+                        println!("in second: {}", p.label);
+                        if first_set.contains(&p.label) {
                             failed = true;
                         }
                     }
@@ -580,10 +663,6 @@ impl BlockCalculator {
             }
         }
         println!("ok: {}, fail: {}", ok_count, fail_count);
-
-        for s in &self.block_map.get(&(143, 63)).unwrap().successors {
-            println!("{:?}", s);
-        }
     }
 
     pub fn print_maps(&mut self){
