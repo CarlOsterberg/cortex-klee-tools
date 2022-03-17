@@ -19,9 +19,10 @@
 	.eabi_attribute	38, 1	@ Tag_ABI_FP_16bit_format
 	.eabi_attribute	14, 0	@ Tag_ABI_PCS_R9_use
 	.file	"1qy0s3krhxnn7fkb"
-	.p2align	2                               @ -- Begin function _ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17he77a0b057f9961a7E
+	.p2align	1                               @ -- Begin function _ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17he77a0b057f9961a7E
 	.type	_ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17he77a0b057f9961a7E,%function
-	.code	32                              @ @_ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17he77a0b057f9961a7E
+	.code	16                              @ @_ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17he77a0b057f9961a7E
+	.thumb_func
 _ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17he77a0b057f9961a7E:
 .Lfunc_begin0:
 	.file	1 "/rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/sys_common" "backtrace.rs"
@@ -30,13 +31,13 @@ _ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17he77a0b057f9961a7E:
 	.cfi_sections .debug_frame
 	.cfi_startproc
 @ %bb.0:                                @ %start
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r7, lr}
+	push	{r7, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
+	.cfi_offset r7, -8
 	.pad	#24
-	sub	sp, sp, #24
+	sub	sp, #24
 	.cfi_def_cfa_offset 32
 	str	r0, [sp, #8]
 .Ltmp6:
@@ -50,15 +51,13 @@ _ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17he77a0b057f9961a7E:
 .Ltmp1:
 @ %bb.1:                                @ %bb2
 	.loc	1 129 2                         @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/sys_common/backtrace.rs:129:2
-	add	sp, sp, #24
-	pop	{r11, lr}
-	mov	pc, lr
+	add	sp, #24
+	pop	{r7, pc}
 .Ltmp9:
 .LBB0_2:                                @ %cleanup
 .Ltmp2:
 	.loc	1 0 2 is_stmt 0                 @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/sys_common/backtrace.rs:0:2
-	str	r1, [sp, #20]
-	str	r0, [sp, #16]
+	strd	r0, r1, [sp, #16]
 	bl	_Unwind_Resume
 .Lfunc_end0:
 	.size	_ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17he77a0b057f9961a7E, .Lfunc_end0-_ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17he77a0b057f9961a7E
@@ -92,9 +91,10 @@ GCC_except_table0:
                                         @ -- End function
 	.hidden	_ZN3std2rt10lang_start17h95c4eabd28917cccE @ -- Begin function _ZN3std2rt10lang_start17h95c4eabd28917cccE
 	.globl	_ZN3std2rt10lang_start17h95c4eabd28917cccE
-	.p2align	2
+	.p2align	1
 	.type	_ZN3std2rt10lang_start17h95c4eabd28917cccE,%function
-	.code	32                              @ @_ZN3std2rt10lang_start17h95c4eabd28917cccE
+	.code	16                              @ @_ZN3std2rt10lang_start17h95c4eabd28917cccE
+	.thumb_func
 _ZN3std2rt10lang_start17h95c4eabd28917cccE:
 .Lfunc_begin1:
 	.file	2 "/rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src" "rt.rs"
@@ -102,13 +102,13 @@ _ZN3std2rt10lang_start17h95c4eabd28917cccE:
 	.fnstart
 	.cfi_startproc
 @ %bb.0:                                @ %start
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r7, lr}
+	push	{r7, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
+	.cfi_offset r7, -8
 	.pad	#48
-	sub	sp, sp, #48
+	sub	sp, #48
 	.cfi_def_cfa_offset 56
 	str	r0, [sp, #24]
 .Ltmp10:
@@ -116,50 +116,41 @@ _ZN3std2rt10lang_start17h95c4eabd28917cccE:
 	str	r0, [sp, #16]
 	ldr	r0, [sp, #56]
 	.loc	2 145 17                        @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/rt.rs:145:17
-	ldr	r1, .LCPI1_0
-	str	r3, [sp, #36]
-	str	r2, [sp, #32]
+	movw	r1, :lower16:.Lvtable.0
+	strd	r2, r3, [sp, #32]
+	movt	r1, :upper16:.Lvtable.0
 	str	r0, [sp]
 	add	r0, sp, #16
 	bl	_ZN3std2rt19lang_start_internal17hd15a47be08101c28E
-	str	r1, [sp, #12]
-	str	r0, [sp, #8]
+	strd	r0, r1, [sp, #8]
 	.loc	2 145 12 is_stmt 0              @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/rt.rs:145:12
-	ldr	r0, [sp, #8]
-	ldr	r1, [sp, #12]
-	str	r1, [sp, #44]
-	str	r0, [sp, #40]
+	strd	r0, r1, [sp, #40]
 	.loc	2 151 2 is_stmt 1               @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/rt.rs:151:2
-	add	sp, sp, #48
-	pop	{r11, lr}
-	mov	pc, lr
+	add	sp, #48
+	pop	{r7, pc}
 .Ltmp11:
-	.p2align	2
-@ %bb.1:
-	.loc	2 0 2 is_stmt 0                 @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/rt.rs:0:2
-.LCPI1_0:
-	.long	.Lvtable.0
 .Lfunc_end1:
 	.size	_ZN3std2rt10lang_start17h95c4eabd28917cccE, .Lfunc_end1-_ZN3std2rt10lang_start17h95c4eabd28917cccE
 	.cfi_endproc
 	.fnend
                                         @ -- End function
-	.p2align	2                               @ -- Begin function _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17haf3fc2bcbbcd6de5E
+	.p2align	1                               @ -- Begin function _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17haf3fc2bcbbcd6de5E
 	.type	_ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17haf3fc2bcbbcd6de5E,%function
-	.code	32                              @ @"_ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17haf3fc2bcbbcd6de5E"
+	.code	16                              @ @"_ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17haf3fc2bcbbcd6de5E"
+	.thumb_func
 _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17haf3fc2bcbbcd6de5E:
 .Lfunc_begin2:
-	.loc	2 146 0 is_stmt 1               @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/rt.rs:146:0
+	.loc	2 146 0                         @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/rt.rs:146:0
 	.fnstart
 	.cfi_startproc
 @ %bb.0:                                @ %start
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r7, lr}
+	push	{r7, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
+	.cfi_offset r7, -8
 	.pad	#8
-	sub	sp, sp, #8
+	sub	sp, #8
 	.cfi_def_cfa_offset 16
 	str	r0, [sp]
 .Ltmp12:
@@ -169,18 +160,18 @@ _ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17haf3fc2bcbbcd6de5E:
 	bl	_ZN3std10sys_common9backtrace28__rust_begin_short_backtrace17he77a0b057f9961a7E
 	bl	_ZN54_$LT$$LP$$RP$$u20$as$u20$std..process..Termination$GT$6report17hd572dd8d4d8f64c3E
 	.loc	2 146 91                        @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/rt.rs:146:91
-	add	sp, sp, #8
-	pop	{r11, lr}
-	mov	pc, lr
+	add	sp, #8
+	pop	{r7, pc}
 .Ltmp13:
 .Lfunc_end2:
 	.size	_ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17haf3fc2bcbbcd6de5E, .Lfunc_end2-_ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17haf3fc2bcbbcd6de5E
 	.cfi_endproc
 	.fnend
                                         @ -- End function
-	.p2align	2                               @ -- Begin function _ZN3std3sys4unix7process14process_common8ExitCode6as_i3217hb58bd3de589f5a9bE
+	.p2align	1                               @ -- Begin function _ZN3std3sys4unix7process14process_common8ExitCode6as_i3217hb58bd3de589f5a9bE
 	.type	_ZN3std3sys4unix7process14process_common8ExitCode6as_i3217hb58bd3de589f5a9bE,%function
-	.code	32                              @ @_ZN3std3sys4unix7process14process_common8ExitCode6as_i3217hb58bd3de589f5a9bE
+	.code	16                              @ @_ZN3std3sys4unix7process14process_common8ExitCode6as_i3217hb58bd3de589f5a9bE
+	.thumb_func
 _ZN3std3sys4unix7process14process_common8ExitCode6as_i3217hb58bd3de589f5a9bE:
 .Lfunc_begin3:
 	.file	3 "/rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/sys/unix/process" "process_common.rs"
@@ -189,24 +180,25 @@ _ZN3std3sys4unix7process14process_common8ExitCode6as_i3217hb58bd3de589f5a9bE:
 	.cfi_startproc
 @ %bb.0:                                @ %start
 	.pad	#8
-	sub	sp, sp, #8
+	sub	sp, #8
 	.cfi_def_cfa_offset 8
 	str	r0, [sp]
 .Ltmp14:
 	.loc	3 475 9 prologue_end            @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/sys/unix/process/process_common.rs:475:9
 	ldrb	r0, [r0]
 	.loc	3 476 6                         @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/sys/unix/process/process_common.rs:476:6
-	add	sp, sp, #8
-	mov	pc, lr
+	add	sp, #8
+	bx	lr
 .Ltmp15:
 .Lfunc_end3:
 	.size	_ZN3std3sys4unix7process14process_common8ExitCode6as_i3217hb58bd3de589f5a9bE, .Lfunc_end3-_ZN3std3sys4unix7process14process_common8ExitCode6as_i3217hb58bd3de589f5a9bE
 	.cfi_endproc
 	.fnend
                                         @ -- End function
-	.p2align	2                               @ -- Begin function _ZN4core3fmt9Arguments6new_v117h3c95ffd7d6febbd6E
+	.p2align	1                               @ -- Begin function _ZN4core3fmt9Arguments6new_v117h3c95ffd7d6febbd6E
 	.type	_ZN4core3fmt9Arguments6new_v117h3c95ffd7d6febbd6E,%function
-	.code	32                              @ @_ZN4core3fmt9Arguments6new_v117h3c95ffd7d6febbd6E
+	.code	16                              @ @_ZN4core3fmt9Arguments6new_v117h3c95ffd7d6febbd6E
+	.thumb_func
 _ZN4core3fmt9Arguments6new_v117h3c95ffd7d6febbd6E:
 .Lfunc_begin4:
 	.file	4 "/rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/fmt" "mod.rs"
@@ -214,139 +206,134 @@ _ZN4core3fmt9Arguments6new_v117h3c95ffd7d6febbd6E:
 	.fnstart
 	.cfi_startproc
 @ %bb.0:                                @ %start
-	.save	{r4, r5, r6, r7, r11, lr}
-	push	{r4, r5, r6, r7, r11, lr}
-	.cfi_def_cfa_offset 24
+	.save	{r4, r5, r6, r7, lr}
+	push	{r4, r5, r6, r7, lr}
+	.cfi_def_cfa_offset 20
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
-	.cfi_offset r7, -12
-	.cfi_offset r6, -16
-	.cfi_offset r5, -20
-	.cfi_offset r4, -24
-	.pad	#56
-	sub	sp, sp, #56
+	.cfi_offset r7, -8
+	.cfi_offset r6, -12
+	.cfi_offset r5, -16
+	.cfi_offset r4, -20
+	.pad	#60
+	sub	sp, #60
 	.cfi_def_cfa_offset 80
 	ldr	r4, [sp, #88]
-	ldr	r12, [sp, #92]
-	ldr	lr, [sp, #80]
-	str	r3, [sp, #36]
-	str	r2, [sp, #32]
+	ldr.w	r12, [sp, #92]
+	ldr.w	lr, [sp, #80]
+	strd	r2, r3, [sp, #32]
 	str	r1, [sp, #24]
 .Ltmp16:
 	.loc	4 362 12 prologue_end           @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/fmt/mod.rs:362:12
 	subs	r5, r2, r4
-	str	r12, [sp, #52]
+	str.w	r12, [sp, #52]
 	str	r4, [sp, #48]
-	str	lr, [sp, #40]
-	sbcs	r5, r3, r12
+	str.w	lr, [sp, #40]
+	sbcs.w	r5, r3, r12
 	bhs	.LBB4_2
 @ %bb.1:                                @ %bb1
 	.loc	4 0 12 is_stmt 0                @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/fmt/mod.rs:0:12
-	mov	r5, #1
+	movs	r5, #1
 	.loc	4 362 12                        @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/fmt/mod.rs:362:12
-	strb	r5, [sp, #7]
+	strb.w	r5, [sp, #7]
 	b	.LBB4_3
 .LBB4_2:                                @ %bb2
 	.loc	4 362 56                        @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/fmt/mod.rs:362:56
 	adds	r5, r4, #1
-	mov	r7, #0
+	mov.w	r7, #0
 	adc	r6, r12, #0
 	.loc	4 362 41                        @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/fmt/mod.rs:362:41
 	subs	r5, r5, r2
-	sbcs	r5, r6, r3
+	sbcs.w	r5, r6, r3
+	it	lo
 	movlo	r7, #1
 	.loc	4 362 12                        @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/fmt/mod.rs:362:12
-	strb	r7, [sp, #7]
+	strb.w	r7, [sp, #7]
 .LBB4_3:                                @ %bb3
-	ldrb	r5, [sp, #7]
-	tst	r5, #1
+	ldrb.w	r5, [sp, #7]
+	lsls	r5, r5, #31
 	.loc	4 365 9 is_stmt 1               @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/fmt/mod.rs:365:9
+	itttt	eq
 	streq	r4, [r0, #40]
-	ldreq	r4, [sp, #16]
+	ldrdeq	r4, r5, [sp, #16]
 	streq	r1, [r0]
-	addeq	r1, r0, #24
-	ldreq	r5, [sp, #20]
-	streq	r2, [r0, #8]
-	streq	r3, [r0, #12]
-	streq	r12, [r0, #44]
-	stmeq	r1, {r4, r5, lr}
+	addeq.w	r1, r0, #24
+	itttt	eq
+	stmeq.w	r1, {r4, r5, lr}
 	moveq	r1, #0
+	strdeq	r2, r3, [r0, #8]
 	streq	r1, [r0, #16]
+	itttt	eq
+	streq.w	r12, [r0, #44]
 	.loc	4 365 34 is_stmt 0              @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/fmt/mod.rs:365:34
 	streq	r1, [sp, #8]
 	.loc	4 366 6 is_stmt 1               @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/fmt/mod.rs:366:6
-	addeq	sp, sp, #56
-	popeq	{r4, r5, r6, r7, r11, lr}
-	moveq	pc, lr
+	addeq	sp, #60
+	popeq	{r4, r5, r6, r7, pc}
 .LBB4_4:                                @ %bb4
 	.loc	4 363 13                        @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/fmt/mod.rs:363:13
-	ldr	r0, .LCPI4_0
-	mov	r2, #12
-	mov	r3, #0
+	movw	r0, :lower16:.Lalloc35
+	movs	r2, #12
+	movs	r3, #0
+	movt	r0, :upper16:.Lalloc35
 	str	r0, [sp]
-	ldr	r0, .LCPI4_1
+	movw	r0, :lower16:.Lalloc33
+	movt	r0, :upper16:.Lalloc33
 	bl	_ZN4core9panicking5panic17h0ba7146865b2f9d6E
 .Ltmp17:
-	.p2align	2
-@ %bb.5:
-	.loc	4 0 13 is_stmt 0                @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/fmt/mod.rs:0:13
-.LCPI4_0:
-	.long	.Lalloc35
-.LCPI4_1:
-	.long	.Lalloc33
 .Lfunc_end4:
 	.size	_ZN4core3fmt9Arguments6new_v117h3c95ffd7d6febbd6E, .Lfunc_end4-_ZN4core3fmt9Arguments6new_v117h3c95ffd7d6febbd6E
 	.cfi_endproc
 	.fnend
                                         @ -- End function
-	.p2align	2                               @ -- Begin function _ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17h05d87b071da08e66E
+	.p2align	1                               @ -- Begin function _ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17h05d87b071da08e66E
 	.type	_ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17h05d87b071da08e66E,%function
-	.code	32                              @ @"_ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17h05d87b071da08e66E"
+	.code	16                              @ @"_ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17h05d87b071da08e66E"
+	.thumb_func
 _ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17h05d87b071da08e66E:
 .Lfunc_begin5:
 	.file	5 "/rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/ops" "function.rs"
-	.loc	5 227 0 is_stmt 1               @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/ops/function.rs:227:0
+	.loc	5 227 0                         @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/ops/function.rs:227:0
 	.fnstart
 	.cfi_startproc
 @ %bb.0:                                @ %start
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r7, lr}
+	push	{r7, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
+	.cfi_offset r7, -8
 	.pad	#16
-	sub	sp, sp, #16
+	sub	sp, #16
 	.cfi_def_cfa_offset 24
 	str	r0, [sp, #8]
 .Ltmp18:
 	.loc	5 227 5 prologue_end            @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/ops/function.rs:227:5
 	ldr	r0, [r0]
 	bl	_ZN4core3ops8function6FnOnce9call_once17hcc7f309ae1cc237bE
-	add	sp, sp, #16
-	pop	{r11, lr}
-	mov	pc, lr
+	add	sp, #16
+	pop	{r7, pc}
 .Ltmp19:
 .Lfunc_end5:
 	.size	_ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17h05d87b071da08e66E, .Lfunc_end5-_ZN4core3ops8function6FnOnce40call_once$u7b$$u7b$vtable.shim$u7d$$u7d$17h05d87b071da08e66E
 	.cfi_endproc
 	.fnend
                                         @ -- End function
-	.p2align	2                               @ -- Begin function _ZN4core3ops8function6FnOnce9call_once17hcc7f309ae1cc237bE
+	.p2align	1                               @ -- Begin function _ZN4core3ops8function6FnOnce9call_once17hcc7f309ae1cc237bE
 	.type	_ZN4core3ops8function6FnOnce9call_once17hcc7f309ae1cc237bE,%function
-	.code	32                              @ @_ZN4core3ops8function6FnOnce9call_once17hcc7f309ae1cc237bE
+	.code	16                              @ @_ZN4core3ops8function6FnOnce9call_once17hcc7f309ae1cc237bE
+	.thumb_func
 _ZN4core3ops8function6FnOnce9call_once17hcc7f309ae1cc237bE:
 .Lfunc_begin6:
 	.loc	5 227 0                         @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/ops/function.rs:227:0
 	.fnstart
 	.cfi_startproc
 @ %bb.0:                                @ %start
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r7, lr}
+	push	{r7, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
+	.cfi_offset r7, -8
 	.pad	#16
-	sub	sp, sp, #16
+	sub	sp, #16
 	.cfi_def_cfa_offset 24
 	str	r0, [sp]
 .Ltmp3:
@@ -355,16 +342,14 @@ _ZN4core3ops8function6FnOnce9call_once17hcc7f309ae1cc237bE:
 	.loc	5 227 5 prologue_end            @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/ops/function.rs:227:5
 	bl	_ZN3std2rt10lang_start28_$u7b$$u7b$closure$u7d$$u7d$17haf3fc2bcbbcd6de5E
 .Ltmp4:
-@ %bb.1:                                @ %bb1
-	add	sp, sp, #16
-	pop	{r11, lr}
-	mov	pc, lr
+@ %bb.1:                                @ %bb2
+	add	sp, #16
+	pop	{r7, pc}
 .Ltmp21:
 .LBB6_2:                                @ %cleanup
 .Ltmp5:
 	.loc	5 0 5 is_stmt 0                 @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/ops/function.rs:0:5
-	str	r1, [sp, #12]
-	str	r0, [sp, #8]
+	strd	r0, r1, [sp, #8]
 	bl	_Unwind_Resume
 .Lfunc_end6:
 	.size	_ZN4core3ops8function6FnOnce9call_once17hcc7f309ae1cc237bE, .Lfunc_end6-_ZN4core3ops8function6FnOnce9call_once17hcc7f309ae1cc237bE
@@ -392,40 +377,40 @@ GCC_except_table6:
 	.p2align	2
 	.fnend
                                         @ -- End function
-	.p2align	2                               @ -- Begin function _ZN4core3ops8function6FnOnce9call_once17he2ef528cca5ba070E
+	.p2align	1                               @ -- Begin function _ZN4core3ops8function6FnOnce9call_once17he2ef528cca5ba070E
 	.type	_ZN4core3ops8function6FnOnce9call_once17he2ef528cca5ba070E,%function
-	.code	32                              @ @_ZN4core3ops8function6FnOnce9call_once17he2ef528cca5ba070E
+	.code	16                              @ @_ZN4core3ops8function6FnOnce9call_once17he2ef528cca5ba070E
+	.thumb_func
 _ZN4core3ops8function6FnOnce9call_once17he2ef528cca5ba070E:
 .Lfunc_begin7:
 	.loc	5 227 0 is_stmt 1               @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/ops/function.rs:227:0
 	.fnstart
 	.cfi_startproc
 @ %bb.0:                                @ %start
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r7, lr}
+	push	{r7, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
+	.cfi_offset r7, -8
 	.pad	#16
-	sub	sp, sp, #16
+	sub	sp, #16
 	.cfi_def_cfa_offset 24
 	str	r0, [sp, #8]
 .Ltmp22:
 	.loc	5 227 5 prologue_end            @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/ops/function.rs:227:5
-	mov	lr, pc
-	mov	pc, r0
-	add	sp, sp, #16
-	pop	{r11, lr}
-	mov	pc, lr
+	blx	r0
+	add	sp, #16
+	pop	{r7, pc}
 .Ltmp23:
 .Lfunc_end7:
 	.size	_ZN4core3ops8function6FnOnce9call_once17he2ef528cca5ba070E, .Lfunc_end7-_ZN4core3ops8function6FnOnce9call_once17he2ef528cca5ba070E
 	.cfi_endproc
 	.fnend
                                         @ -- End function
-	.p2align	2                               @ -- Begin function _ZN4core3ptr85drop_in_place$LT$std..rt..lang_start$LT$$LP$$RP$$GT$..$u7b$$u7b$closure$u7d$$u7d$$GT$17h915f7ee027681576E
+	.p2align	1                               @ -- Begin function _ZN4core3ptr85drop_in_place$LT$std..rt..lang_start$LT$$LP$$RP$$GT$..$u7b$$u7b$closure$u7d$$u7d$$GT$17h915f7ee027681576E
 	.type	_ZN4core3ptr85drop_in_place$LT$std..rt..lang_start$LT$$LP$$RP$$GT$..$u7b$$u7b$closure$u7d$$u7d$$GT$17h915f7ee027681576E,%function
-	.code	32                              @ @"_ZN4core3ptr85drop_in_place$LT$std..rt..lang_start$LT$$LP$$RP$$GT$..$u7b$$u7b$closure$u7d$$u7d$$GT$17h915f7ee027681576E"
+	.code	16                              @ @"_ZN4core3ptr85drop_in_place$LT$std..rt..lang_start$LT$$LP$$RP$$GT$..$u7b$$u7b$closure$u7d$$u7d$$GT$17h915f7ee027681576E"
+	.thumb_func
 _ZN4core3ptr85drop_in_place$LT$std..rt..lang_start$LT$$LP$$RP$$GT$..$u7b$$u7b$closure$u7d$$u7d$$GT$17h915f7ee027681576E:
 .Lfunc_begin8:
 	.file	6 "/rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/ptr" "mod.rs"
@@ -434,21 +419,22 @@ _ZN4core3ptr85drop_in_place$LT$std..rt..lang_start$LT$$LP$$RP$$GT$..$u7b$$u7b$cl
 	.cfi_startproc
 @ %bb.0:                                @ %start
 	.pad	#8
-	sub	sp, sp, #8
+	sub	sp, #8
 	.cfi_def_cfa_offset 8
 	str	r0, [sp], #8
 .Ltmp24:
 	.loc	6 188 1 prologue_end            @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/ptr/mod.rs:188:1
-	mov	pc, lr
+	bx	lr
 .Ltmp25:
 .Lfunc_end8:
 	.size	_ZN4core3ptr85drop_in_place$LT$std..rt..lang_start$LT$$LP$$RP$$GT$..$u7b$$u7b$closure$u7d$$u7d$$GT$17h915f7ee027681576E, .Lfunc_end8-_ZN4core3ptr85drop_in_place$LT$std..rt..lang_start$LT$$LP$$RP$$GT$..$u7b$$u7b$closure$u7d$$u7d$$GT$17h915f7ee027681576E
 	.cfi_endproc
 	.fnend
                                         @ -- End function
-	.p2align	2                               @ -- Begin function _ZN4core4hint9black_box17hecf72d9b21525f67E
+	.p2align	1                               @ -- Begin function _ZN4core4hint9black_box17hecf72d9b21525f67E
 	.type	_ZN4core4hint9black_box17hecf72d9b21525f67E,%function
-	.code	32                              @ @_ZN4core4hint9black_box17hecf72d9b21525f67E
+	.code	16                              @ @_ZN4core4hint9black_box17hecf72d9b21525f67E
+	.thumb_func
 _ZN4core4hint9black_box17hecf72d9b21525f67E:
 .Lfunc_begin9:
 	.file	7 "/rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src" "hint.rs"
@@ -457,24 +443,25 @@ _ZN4core4hint9black_box17hecf72d9b21525f67E:
 	.cfi_startproc
 @ %bb.0:                                @ %start
 	.pad	#4
-	sub	sp, sp, #4
+	sub	sp, #4
 	.cfi_def_cfa_offset 4
 .Ltmp26:
 	.loc	7 158 5 prologue_end            @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/hint.rs:158:5
 	@APP
 	@NO_APP
 	.loc	7 159 2                         @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/core/src/hint.rs:159:2
-	add	sp, sp, #4
-	mov	pc, lr
+	add	sp, #4
+	bx	lr
 .Ltmp27:
 .Lfunc_end9:
 	.size	_ZN4core4hint9black_box17hecf72d9b21525f67E, .Lfunc_end9-_ZN4core4hint9black_box17hecf72d9b21525f67E
 	.cfi_endproc
 	.fnend
                                         @ -- End function
-	.p2align	2                               @ -- Begin function _ZN54_$LT$$LP$$RP$$u20$as$u20$std..process..Termination$GT$6report17hd572dd8d4d8f64c3E
+	.p2align	1                               @ -- Begin function _ZN54_$LT$$LP$$RP$$u20$as$u20$std..process..Termination$GT$6report17hd572dd8d4d8f64c3E
 	.type	_ZN54_$LT$$LP$$RP$$u20$as$u20$std..process..Termination$GT$6report17hd572dd8d4d8f64c3E,%function
-	.code	32                              @ @"_ZN54_$LT$$LP$$RP$$u20$as$u20$std..process..Termination$GT$6report17hd572dd8d4d8f64c3E"
+	.code	16                              @ @"_ZN54_$LT$$LP$$RP$$u20$as$u20$std..process..Termination$GT$6report17hd572dd8d4d8f64c3E"
+	.thumb_func
 _ZN54_$LT$$LP$$RP$$u20$as$u20$std..process..Termination$GT$6report17hd572dd8d4d8f64c3E:
 .Lfunc_begin10:
 	.file	8 "/rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src" "process.rs"
@@ -482,63 +469,63 @@ _ZN54_$LT$$LP$$RP$$u20$as$u20$std..process..Termination$GT$6report17hd572dd8d4d8
 	.fnstart
 	.cfi_startproc
 @ %bb.0:                                @ %start
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r7, lr}
+	push	{r7, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
+	.cfi_offset r7, -8
 	.pad	#8
-	sub	sp, sp, #8
+	sub	sp, #8
 	.cfi_def_cfa_offset 16
 .Ltmp28:
 	.loc	8 2020 9 prologue_end           @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/process.rs:2020:9
-	mov	r0, #0
+	movs	r0, #0
 	bl	_ZN68_$LT$std..process..ExitCode$u20$as$u20$std..process..Termination$GT$6report17h754f37281d48e2e3E
 	.loc	8 2021 6                        @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/process.rs:2021:6
-	add	sp, sp, #8
-	pop	{r11, lr}
-	mov	pc, lr
+	add	sp, #8
+	pop	{r7, pc}
 .Ltmp29:
 .Lfunc_end10:
 	.size	_ZN54_$LT$$LP$$RP$$u20$as$u20$std..process..Termination$GT$6report17hd572dd8d4d8f64c3E, .Lfunc_end10-_ZN54_$LT$$LP$$RP$$u20$as$u20$std..process..Termination$GT$6report17hd572dd8d4d8f64c3E
 	.cfi_endproc
 	.fnend
                                         @ -- End function
-	.p2align	2                               @ -- Begin function _ZN68_$LT$std..process..ExitCode$u20$as$u20$std..process..Termination$GT$6report17h754f37281d48e2e3E
+	.p2align	1                               @ -- Begin function _ZN68_$LT$std..process..ExitCode$u20$as$u20$std..process..Termination$GT$6report17h754f37281d48e2e3E
 	.type	_ZN68_$LT$std..process..ExitCode$u20$as$u20$std..process..Termination$GT$6report17h754f37281d48e2e3E,%function
-	.code	32                              @ @"_ZN68_$LT$std..process..ExitCode$u20$as$u20$std..process..Termination$GT$6report17h754f37281d48e2e3E"
+	.code	16                              @ @"_ZN68_$LT$std..process..ExitCode$u20$as$u20$std..process..Termination$GT$6report17h754f37281d48e2e3E"
+	.thumb_func
 _ZN68_$LT$std..process..ExitCode$u20$as$u20$std..process..Termination$GT$6report17h754f37281d48e2e3E:
 .Lfunc_begin11:
 	.loc	8 2053 0                        @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/process.rs:2053:0
 	.fnstart
 	.cfi_startproc
 @ %bb.0:                                @ %start
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r7, lr}
+	push	{r7, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
+	.cfi_offset r7, -8
 	.pad	#8
-	sub	sp, sp, #8
+	sub	sp, #8
 	.cfi_def_cfa_offset 16
-	strb	r0, [sp, #7]
-	add	r0, sp, #7
+	strb.w	r0, [sp, #7]
+	add.w	r0, sp, #7
 .Ltmp30:
 	.loc	8 2054 9 prologue_end           @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/process.rs:2054:9
 	bl	_ZN3std3sys4unix7process14process_common8ExitCode6as_i3217hb58bd3de589f5a9bE
 	.loc	8 2055 6                        @ /rustc/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/std/src/process.rs:2055:6
-	add	sp, sp, #8
-	pop	{r11, lr}
-	mov	pc, lr
+	add	sp, #8
+	pop	{r7, pc}
 .Ltmp31:
 .Lfunc_end11:
 	.size	_ZN68_$LT$std..process..ExitCode$u20$as$u20$std..process..Termination$GT$6report17h754f37281d48e2e3E, .Lfunc_end11-_ZN68_$LT$std..process..ExitCode$u20$as$u20$std..process..Termination$GT$6report17h754f37281d48e2e3E
 	.cfi_endproc
 	.fnend
                                         @ -- End function
-	.p2align	2                               @ -- Begin function _ZN10helloworld4main17h2d296a82238a34ebE
+	.p2align	1                               @ -- Begin function _ZN10helloworld4main17h2d296a82238a34ebE
 	.type	_ZN10helloworld4main17h2d296a82238a34ebE,%function
-	.code	32                              @ @_ZN10helloworld4main17h2d296a82238a34ebE
+	.code	16                              @ @_ZN10helloworld4main17h2d296a82238a34ebE
+	.thumb_func
 _ZN10helloworld4main17h2d296a82238a34ebE:
 .Lfunc_begin12:
 	.file	9 "/home/carlosterberg/helloworld" "src/main.rs"
@@ -546,78 +533,68 @@ _ZN10helloworld4main17h2d296a82238a34ebE:
 	.fnstart
 	.cfi_startproc
 @ %bb.0:                                @ %start
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r4, lr}
+	push	{r4, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
+	.cfi_offset r4, -8
 	.pad	#64
-	sub	sp, sp, #64
+	sub	sp, #64
 	.cfi_def_cfa_offset 72
-	mov	r0, #0
+	movs	r0, #0
 .Ltmp32:
 	.loc	9 2 5 prologue_end              @ src/main.rs:2:5
-	ldr	r1, .LCPI12_1
-	mov	r2, #1
-	mov	r3, #0
-	str	r0, [sp, #8]
-	str	r0, [sp, #12]
-	ldr	r0, .LCPI12_0
+	movw	r1, :lower16:.Lalloc3
+	add	r4, sp, #16
+	movs	r2, #1
+	movs	r3, #0
+	strd	r0, r0, [sp, #8]
+	movw	r0, :lower16:.Lalloc5
+	movt	r1, :upper16:.Lalloc3
+	movt	r0, :upper16:.Lalloc5
 	str	r0, [sp]
-	add	r0, sp, #16
+	mov	r0, r4
 	bl	_ZN4core3fmt9Arguments6new_v117h3c95ffd7d6febbd6E
-	add	r0, sp, #16
+	mov	r0, r4
 	bl	_ZN3std2io5stdio6_print17hd9c9dbd31aa97d70E
 	.loc	9 3 2                           @ src/main.rs:3:2
-	add	sp, sp, #64
-	pop	{r11, lr}
-	mov	pc, lr
+	add	sp, #64
+	pop	{r4, pc}
 .Ltmp33:
-	.p2align	2
-@ %bb.1:
-	.loc	9 0 2 is_stmt 0                 @ src/main.rs:0:2
-.LCPI12_0:
-	.long	.Lalloc5
-.LCPI12_1:
-	.long	.Lalloc3
 .Lfunc_end12:
 	.size	_ZN10helloworld4main17h2d296a82238a34ebE, .Lfunc_end12-_ZN10helloworld4main17h2d296a82238a34ebE
 	.cfi_endproc
 	.fnend
                                         @ -- End function
 	.globl	main                            @ -- Begin function main
-	.p2align	2
+	.p2align	1
 	.type	main,%function
-	.code	32                              @ @main
+	.code	16                              @ @main
+	.thumb_func
 main:
 .Lfunc_begin13:
 	.fnstart
 	.cfi_startproc
 @ %bb.0:                                @ %top
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r7, lr}
+	push	{r7, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
+	.cfi_offset r7, -8
 	.pad	#8
-	sub	sp, sp, #8
+	sub	sp, #8
 	.cfi_def_cfa_offset 16
 	mov	r2, r0
-	ldr	r0, .LCPI13_0
-	asr	r3, r2, #31
+	movw	r0, :lower16:__rustc_debug_gdb_scripts_section__
+	movt	r0, :upper16:__rustc_debug_gdb_scripts_section__
+	asrs	r3, r2, #31
 	ldrb	r0, [r0]
 	str	r1, [sp]
-	ldr	r0, .LCPI13_1
+	movw	r0, :lower16:_ZN10helloworld4main17h2d296a82238a34ebE
+	movt	r0, :upper16:_ZN10helloworld4main17h2d296a82238a34ebE
 	bl	_ZN3std2rt10lang_start17h95c4eabd28917cccE
-	add	sp, sp, #8
-	pop	{r11, lr}
-	mov	pc, lr
-	.p2align	2
-@ %bb.1:
-.LCPI13_0:
-	.long	__rustc_debug_gdb_scripts_section__
-.LCPI13_1:
-	.long	_ZN10helloworld4main17h2d296a82238a34ebE
+	add	sp, #8
+	pop	{r7, pc}
 .Lfunc_end13:
 	.size	main, .Lfunc_end13-main
 	.cfi_endproc

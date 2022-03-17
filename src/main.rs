@@ -41,17 +41,32 @@ fn main() {
     dir4.push("src");
     dir4.push("ktest_parser");
     dir4.push("test_cases");
-    dir4.push("sort");
+    dir4.push("rustarm");
 
-    run_labeler_and_bc(&dir2, "assembly_sort.ll".to_string(), &dir4);
+    run_labeler_and_bc(&dir2, "rust_arm_assembly.ll".to_string(), &dir4);
+    //run_labeler(&dir2, "rust_arm_assembly.ll".to_string());
+    //check_block_structure(&dir2, "rust_arm_assembly_labeled.s".to_string());
 
+}
+
+pub fn check_block_structure(path: &PathBuf, file_name: String) {
+    let mut bc = block_calculator::BlockCalculator::new();
+    bc.analyze_file_block_structure(path, &file_name);
+    bc.assert_analyzable_block_structure();
+}
+
+pub fn run_labeler(path: &PathBuf, file_name: String) {
+    //Run the labeling tool
+    let mut labeler = llvmir_labeler::Labeler::new();
+    let _replaced_string = labeler.label_file(path, &file_name).unwrap();
+    labeler.save_file(path, &file_name);
 }
 
 pub fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &PathBuf) {
     //Run the labeling tool
     let mut labeler = llvmir_labeler::Labeler::new();
-    let replaced_string = labeler.label_file(path, &file_name).unwrap();
-    labeler.save_file(path, &file_name, replaced_string);
+    let _replaced_string = labeler.label_file(path, &file_name).unwrap();
+    labeler.save_file(path, &file_name);
 
     //Read the label files
     let labels = ktest_parser::read_labels(path_to_label_files).unwrap();
@@ -76,24 +91,33 @@ pub fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files
         label_file_count += 1;
         let mut path_labels_renamed = Vec::new();
         for pl in path_labels {
-            let fn_nr = bc.fn_map.get(&pl.0).unwrap();
+            let fn_name;
+            let rust_mangle_split: Vec<&str> = pl.0.split("17h").collect();
+            if rust_mangle_split.len() == 2 {
+                fn_name = rust_mangle_split[0].to_string();
+            }
+            else {
+                fn_name = pl.0;
+            }
+
+            let fn_nr = bc.fn_map.get(&fn_name).unwrap();
             let percent_removed = &pl.1[1..pl.1.len()];
             let label_number = percent_removed.parse::<u32>();
             if label_number.is_ok() {
                 //if labeler has replaced the number with a new label, push that instead
                 if labeler.label_map.contains_key(&(label_number.clone().unwrap().to_string(), *fn_nr)) {
                     let block_name = labeler.label_map.get(&(label_number.unwrap().to_string(), *fn_nr)).unwrap().to_string();
-                    path_labels_renamed.push((pl.0.clone(), block_name.clone()));
+                    path_labels_renamed.push((fn_name, block_name.clone()));
                     continue;
                 }
                 //A number name which has not been replaced has to be the initial block
                 else {
-                    path_labels_renamed.push((pl.0.clone(), "initial_fn_block".to_string()));
+                    path_labels_renamed.push((fn_name, "initial_fn_block".to_string()));
                 }
             }
             //Label already had a name before the labeling tool
             else {
-                path_labels_renamed.push(pl.clone());
+                path_labels_renamed.push((fn_name, pl.1));
             }
         }
 

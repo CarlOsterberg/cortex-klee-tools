@@ -6,21 +6,24 @@ use std::collections::HashMap;
 #[allow(dead_code)]
 pub struct Labeler {
     pub label_map: HashMap<(String, i32), String>,
+    pub file_content: String,
 }
 
 #[allow(dead_code)]
 impl Labeler {
     pub fn new() -> Labeler {
         Labeler {
-            label_map: HashMap::new(),        
+            label_map: HashMap::new(),
+            file_content: "".to_string(),        
         }
     }
 
-    pub fn rename_declarations(&mut self, file_contents: String) -> String{
+    pub fn rename_declarations(&mut self){
         let mut delta: u32 = 0;
         let mut fn_nr: i32 = -1;
-        let rows: Vec<&str> = file_contents.split("\n").collect();
-        let mut new_rows = Vec::new();
+        let file_content_clone = self.file_content.clone();
+        self.file_content = "".to_string();
+        let rows: Vec<&str> = file_content_clone.split("\n").collect();
         let numbered_block = Regex::new(r"^(\s*)(?P<x>[0-9]+):\D").unwrap();
         let assignment = Regex::new(r"%(?P<x>[0-9]+)(\s*)=").unwrap();
         let fn_def = Regex::new(r"define").unwrap();
@@ -57,25 +60,19 @@ impl Labeler {
                 let replacement = format!("%{} =", number_as_u32);
                 new_row = assignment.replace_all(row, replacement).to_string();
             }
-
-            new_rows.push(new_row);
+            self.file_content.push_str(&new_row);
+            self.file_content.push_str("\n");
 
         }
-
-
-        let mut ret: String = "".to_string();
-        for l in new_rows {
-            ret = format!("{}\n{}", ret, l);
-        }
-        ret
     }
 
 
     //Renames the uses of register after the first pass has been done
-    pub fn rename_uses(&mut self, file_contents: String) -> String {
+    pub fn rename_uses(&mut self) {
         let mut fn_nr: i32 = -1;
-        let rows: Vec<&str> = file_contents.split("\n").collect();
-        let mut new_rows = Vec::new();
+        let file_content_clone = self.file_content.clone();
+        self.file_content = "".to_string();
+        let rows: Vec<&str> = file_content_clone.split("\n").collect();
         let use_of_reg = Regex::new(r"%(?P<x>[0-9]+)").unwrap();
         let assignment = Regex::new(r"%(?P<x>[0-9]+)(\s*)=").unwrap();
         let fn_def = Regex::new(r"define").unwrap();
@@ -113,16 +110,10 @@ impl Labeler {
                     new_row = self.relabel_row(row.to_string(), &fn_nr)
                 }
             }
-            new_rows.push(new_row);
+            self.file_content.push_str(&new_row);
+            self.file_content.push_str("\n");
 
         }
-
-        let mut ret: String = "".to_string();
-        for l in new_rows {
-            ret = format!("{}\n{}", ret, l);
-        }
-        ret
-
     }
 
     pub fn relabel_row(&mut self, row: String, fn_nr: &i32) -> String {
@@ -180,9 +171,12 @@ impl Labeler {
                                 if file_content_read_res.is_err() {
                                     return Err(file_content_read_res.unwrap_err().to_string());
                                 }
-                                let first_pass = self.rename_declarations(file_content_read_res.unwrap());
-                                let second_pass = self.rename_uses(first_pass);
-                                return Ok(second_pass);
+                                self.file_content = file_content_read_res.unwrap();
+                                println!("starting first pass");
+                                self.rename_declarations();
+                                println!("starting second pass");
+                                self.rename_uses();
+                                return Ok("".to_string());
 
                             }
                         }
@@ -195,11 +189,12 @@ impl Labeler {
         }
     }
 
-    pub fn save_file(&mut self, path: &PathBuf, file_name: &str, file_contents: String) {
+    pub fn save_file(&mut self, path: &PathBuf, file_name: &str) {
         let file_name_split: Vec<&str> = file_name.split(".").collect();
         let path_clone = path.clone();
         let new_name = format!("{}_labeled.{}", path_clone.join(file_name_split[0]).to_str().unwrap(), file_name_split[1]);
-        fs::write(new_name, file_contents).unwrap();
+        fs::write(new_name, self.file_content.clone()).unwrap();
+        println!("saved labeled file");
     }
 
     pub fn print_map(&mut self){

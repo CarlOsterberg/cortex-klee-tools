@@ -21,9 +21,10 @@
 	.eabi_attribute	14, 0	@ Tag_ABI_PCS_R9_use
 	.file	"sort.c"
 	.globl	bubble_sort                     @ -- Begin function bubble_sort
-	.p2align	2
+	.p2align	1
 	.type	bubble_sort,%function
-	.code	32                              @ @bubble_sort
+	.code	16                              @ @bubble_sort
+	.thumb_func
 bubble_sort:
 .Lfunc_begin0:
 	.file	1 "/home/isak/Documents/xj/klee-fork/klee/examples/sort" "sort.c"
@@ -32,27 +33,33 @@ bubble_sort:
 	.cfi_sections .debug_frame
 	.cfi_startproc
 @ %bb.0:
+	.save	{r7, lr}
+	push	{r7, lr}
+	.cfi_def_cfa_offset 8
+	.cfi_offset lr, -4
+	.cfi_offset r7, -8
+	.setfp	r7, sp
+	mov	r7, sp
+	.cfi_def_cfa_register r7
 	.pad	#24
-	sub	sp, sp, #24
-	.cfi_def_cfa_offset 24
-	str	r0, [sp, #16]
-	mov	r0, #1
-	str	r1, [sp, #12]
+	sub	sp, #24
+	mov.w	r12, #0
+	strd	r1, r0, [sp, #12]
+	movs	r0, #1
 .Ltmp0:
 	.loc	1 23 9 prologue_end             @ sort.c:23:9
 	str	r0, [sp, #8]
-	mov	r0, #0
 .Ltmp1:
 	.loc	1 25 19                         @ sort.c:25:19
-	str	r0, [sp, #4]
+	str.w	r12, [sp, #4]
 	b	.LBB0_2
 .LBB0_1:                                @ %.customlabel3
                                         @   in Loop: Header=BB0_2 Depth=1
 .Ltmp2:
 	.loc	1 25 41 is_stmt 0               @ sort.c:25:41
-	ldr	r1, [sp, #4]
-	add	r1, r1, #1
-	str	r1, [sp, #4]
+	ldr	r0, [sp, #4]
+	adds	r0, #1
+	str	r0, [sp, #4]
 .LBB0_2:                                @ %.customlabel0
                                         @ =>This Inner Loop Header: Depth=1
 	.loc	1 25 26                         @ sort.c:25:26
@@ -60,14 +67,15 @@ bubble_sort:
 	.loc	1 25 34                         @ sort.c:25:34
 	ldr	r2, [sp, #12]
 	.loc	1 25 28                         @ sort.c:25:28
-	add	r1, r1, #1
+	adds	r1, #1
 .Ltmp3:
 	.loc	1 25 5                          @ sort.c:25:5
 	cmp	r1, r2
 .Ltmp4:
 	.loc	1 36 1 is_stmt 1                @ sort.c:36:1
-	addhs	sp, sp, #24
-	movhs	pc, lr
+	itt	hs
+	addhs	sp, #24
+	pophs	{r7, pc}
 .LBB0_3:                                @ %.customlabel1
                                         @   in Loop: Header=BB0_2 Depth=1
 .Ltmp5:
@@ -76,12 +84,13 @@ bubble_sort:
 	.loc	1 26 11 is_stmt 0               @ sort.c:26:11
 	ldr	r2, [sp, #16]
 	.loc	1 26 24                         @ sort.c:26:24
-	ldr	r1, [r2, r1, lsl #2]!
+	ldr.w	r3, [r2, r1, lsl #2]
+	add.w	r1, r2, r1, lsl #2
 	.loc	1 26 11                         @ sort.c:26:11
-	ldr	r2, [r2, #4]
+	ldr	r1, [r1, #4]
 .Ltmp6:
 	.loc	1 26 11                         @ sort.c:26:11
-	cmp	r2, r1
+	cmp	r1, r3
 	bge	.LBB0_1
 @ %bb.4:                                @ %.customlabel2
                                         @   in Loop: Header=BB0_2 Depth=1
@@ -91,17 +100,19 @@ bubble_sort:
 	.loc	1 27 17 is_stmt 0               @ sort.c:27:17
 	ldr	r2, [sp, #16]
 	.loc	1 30 14 is_stmt 1               @ sort.c:30:14
-	str	r0, [sp, #8]
+	str.w	r12, [sp, #8]
+	.loc	1 29 9                          @ sort.c:29:9
+	add.w	r0, r2, r1, lsl #2
 	.loc	1 28 24                         @ sort.c:28:24
-	ldr	r1, [r2, r1, lsl #2]!
+	ldr.w	lr, [r2, r1, lsl #2]
 	.loc	1 27 17                         @ sort.c:27:17
-	ldr	r3, [r2, #4]
+	ldr	r3, [r0, #4]
 	.loc	1 29 18                         @ sort.c:29:18
-	str	r3, [r2]
+	str.w	r3, [r2, r1, lsl #2]
+	.loc	1 28 22                         @ sort.c:28:22
+	str.w	lr, [r0, #4]
 	.loc	1 27 13                         @ sort.c:27:13
 	str	r3, [sp]
-	.loc	1 28 22                         @ sort.c:28:22
-	str	r1, [r2, #4]
 	b	.LBB0_1
 .Ltmp8:
 .Lfunc_end0:
@@ -110,36 +121,36 @@ bubble_sort:
 	.fnend
                                         @ -- End function
 	.globl	insertion_sort                  @ -- Begin function insertion_sort
-	.p2align	2
+	.p2align	1
 	.type	insertion_sort,%function
-	.code	32                              @ @insertion_sort
+	.code	16                              @ @insertion_sort
+	.thumb_func
 insertion_sort:
 .Lfunc_begin1:
 	.loc	1 38 0                          @ sort.c:38:0
 	.fnstart
 	.cfi_startproc
 @ %bb.0:
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r7, lr}
+	push	{r7, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
-	.setfp	r11, sp
-	mov	r11, sp
-	.cfi_def_cfa_register r11
+	.cfi_offset r7, -8
+	.setfp	r7, sp
+	mov	r7, sp
+	.cfi_def_cfa_register r7
 	.pad	#24
-	sub	sp, sp, #24
-	str	r0, [r11, #-8]
-	str	r1, [sp, #12]
+	sub	sp, #24
+	strd	r1, r0, [sp, #12]
 .Ltmp9:
 	.loc	1 39 36 prologue_end            @ sort.c:39:36
-	lsl	r0, r1, #2
-	lsr	r1, r1, #30
+	lsls	r0, r1, #2
+	lsrs	r1, r1, #30
 	.loc	1 39 15 is_stmt 0               @ sort.c:39:15
 	bl	malloc
 	.loc	1 39 8                          @ sort.c:39:8
 	str	r0, [sp, #8]
-	mov	r0, #0
+	movs	r0, #0
 .LBB1_1:                                @ %.customlabel0
                                         @ =>This Inner Loop Header: Depth=1
 .Ltmp10:
@@ -160,27 +171,25 @@ insertion_sort:
 	.loc	1 42 26 is_stmt 1               @ sort.c:42:26
 	ldr	r1, [sp, #4]
 	.loc	1 42 29 is_stmt 0               @ sort.c:42:29
-	ldr	r0, [r11, #-8]
-	ldr	r2, [r0, r1, lsl #2]
+	ldr	r0, [sp, #16]
+	ldr.w	r2, [r0, r1, lsl #2]
 	.loc	1 42 20                         @ sort.c:42:20
 	ldr	r0, [sp, #8]
 	.loc	1 42 5                          @ sort.c:42:5
 	bl	insert_ordered
 	.loc	1 41 36 is_stmt 1               @ sort.c:41:36
 	ldr	r0, [sp, #4]
-	add	r0, r0, #1
+	adds	r0, #1
 	b	.LBB1_1
 .Ltmp14:
 .LBB1_3:                                @ %.customlabel2
-	.loc	1 44 40                         @ sort.c:44:40
-	ldr	r3, [sp, #12]
-	.loc	1 44 17 is_stmt 0               @ sort.c:44:17
-	ldr	r1, [sp, #8]
-	.loc	1 44 10                         @ sort.c:44:10
-	ldr	r0, [r11, #-8]
+	.loc	1 44 17                         @ sort.c:44:17
+	ldrd	r1, r3, [sp, #8]
+	.loc	1 44 10 is_stmt 0               @ sort.c:44:10
+	ldr	r0, [sp, #16]
 	.loc	1 44 38                         @ sort.c:44:38
-	lsl	r2, r3, #2
-	lsr	r3, r3, #30
+	lsls	r2, r3, #2
+	lsrs	r3, r3, #30
 	.loc	1 44 3                          @ sort.c:44:3
 	bl	memcpy
 	.loc	1 45 8 is_stmt 1                @ sort.c:45:8
@@ -188,38 +197,37 @@ insertion_sort:
 	.loc	1 45 3 is_stmt 0                @ sort.c:45:3
 	bl	free
 	.loc	1 46 1 is_stmt 1                @ sort.c:46:1
-	mov	sp, r11
-	pop	{r11, lr}
-	mov	pc, lr
+	add	sp, #24
+	pop	{r7, pc}
 .Ltmp15:
 .Lfunc_end1:
 	.size	insertion_sort, .Lfunc_end1-insertion_sort
 	.cfi_endproc
 	.fnend
                                         @ -- End function
-	.p2align	2                               @ -- Begin function insert_ordered
+	.p2align	1                               @ -- Begin function insert_ordered
 	.type	insert_ordered,%function
-	.code	32                              @ @insert_ordered
+	.code	16                              @ @insert_ordered
+	.thumb_func
 insert_ordered:
 .Lfunc_begin2:
 	.loc	1 8 0                           @ sort.c:8:0
 	.fnstart
 	.cfi_startproc
 @ %bb.0:
-	.save	{r11, lr}
-	push	{r11, lr}
+	.save	{r7, lr}
+	push	{r7, lr}
 	.cfi_def_cfa_offset 8
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
-	.setfp	r11, sp
-	mov	r11, sp
-	.cfi_def_cfa_register r11
+	.cfi_offset r7, -8
+	.setfp	r7, sp
+	mov	r7, sp
+	.cfi_def_cfa_register r7
 	.pad	#24
-	sub	sp, sp, #24
-	str	r0, [r11, #-8]
-	mov	r0, #0
-	str	r1, [sp, #12]
-	str	r2, [sp, #8]
+	sub	sp, #24
+	str	r0, [sp, #16]
+	movs	r0, #0
+	strd	r2, r1, [sp, #8]
 .LBB2_1:                                @ %.customlabel0
                                         @ =>This Inner Loop Header: Depth=1
 .Ltmp16:
@@ -240,8 +248,8 @@ insert_ordered:
 	.loc	1 12 22 is_stmt 1               @ sort.c:12:22
 	ldr	r0, [sp, #4]
 	.loc	1 12 16 is_stmt 0               @ sort.c:12:16
-	ldr	r1, [r11, #-8]
-	ldr	r0, [r1, r0, lsl #2]
+	ldr	r1, [sp, #16]
+	ldr.w	r0, [r1, r0, lsl #2]
 	.loc	1 12 9                          @ sort.c:12:9
 	ldr	r1, [sp, #8]
 .Ltmp20:
@@ -253,7 +261,7 @@ insert_ordered:
                                         @   in Loop: Header=BB2_1 Depth=1
 	.loc	1 11 22 is_stmt 1               @ sort.c:11:22
 	ldr	r0, [sp, #4]
-	add	r0, r0, #1
+	adds	r0, #1
 	b	.LBB2_1
 .LBB2_4:                                @ %.customlabel2
 .Ltmp22:
@@ -262,33 +270,30 @@ insert_ordered:
 	.loc	1 13 57 is_stmt 0               @ sort.c:13:57
 	ldr	r3, [sp, #12]
 	.loc	1 13 16                         @ sort.c:13:16
-	ldr	r0, [r11, #-8]
+	ldr	r0, [sp, #16]
 	.loc	1 13 29                         @ sort.c:13:29
-	add	r1, r0, r2, lsl #2
+	add.w	r1, r0, r2, lsl #2
 	.loc	1 13 63                         @ sort.c:13:63
-	sub	r3, r3, r2
+	subs	r3, r3, r2
 	.loc	1 13 54                         @ sort.c:13:54
-	lsl	r2, r3, #2
+	lsls	r2, r3, #2
 	.loc	1 13 16                         @ sort.c:13:16
-	add	r0, r1, #4
+	adds	r0, r1, #4
 	.loc	1 13 54                         @ sort.c:13:54
-	lsr	r3, r3, #30
+	lsrs	r3, r3, #30
 	.loc	1 13 7                          @ sort.c:13:7
 	bl	memmove
 .Ltmp23:
 .LBB2_5:                                @ %.customlabel4
-	.loc	1 18 9 is_stmt 1                @ sort.c:18:9
-	ldr	r0, [sp, #4]
-	.loc	1 18 3 is_stmt 0                @ sort.c:18:3
-	ldr	r1, [r11, #-8]
-	.loc	1 18 14                         @ sort.c:18:14
-	ldr	r2, [sp, #8]
+	.loc	1 18 3 is_stmt 1                @ sort.c:18:3
+	ldr	r1, [sp, #16]
+	.loc	1 18 9 is_stmt 0                @ sort.c:18:9
+	ldrd	r0, r2, [sp, #4]
 	.loc	1 18 12                         @ sort.c:18:12
-	str	r2, [r1, r0, lsl #2]
+	str.w	r2, [r1, r0, lsl #2]
 	.loc	1 19 1 is_stmt 1                @ sort.c:19:1
-	mov	sp, r11
-	pop	{r11, lr}
-	mov	pc, lr
+	add	sp, #24
+	pop	{r7, pc}
 .Ltmp24:
 .Lfunc_end2:
 	.size	insert_ordered, .Lfunc_end2-insert_ordered
@@ -296,33 +301,33 @@ insert_ordered:
 	.fnend
                                         @ -- End function
 	.globl	test                            @ -- Begin function test
-	.p2align	2
+	.p2align	1
 	.type	test,%function
-	.code	32                              @ @test
+	.code	16                              @ @test
+	.thumb_func
 test:
 .Lfunc_begin3:
 	.loc	1 48 0                          @ sort.c:48:0
 	.fnstart
 	.cfi_startproc
 @ %bb.0:
-	.save	{r4, r10, r11, lr}
-	push	{r4, r10, r11, lr}
+	.save	{r4, r6, r7, lr}
+	push	{r4, r6, r7, lr}
 	.cfi_def_cfa_offset 16
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
-	.cfi_offset r10, -12
+	.cfi_offset r7, -8
+	.cfi_offset r6, -12
 	.cfi_offset r4, -16
-	.setfp	r11, sp, #8
-	add	r11, sp, #8
-	.cfi_def_cfa r11, 8
+	.setfp	r7, sp, #8
+	add	r7, sp, #8
+	.cfi_def_cfa r7, 8
 	.pad	#32
-	sub	sp, sp, #32
-	str	r0, [r11, #-16]
-	str	r1, [sp, #20]
+	sub	sp, #32
+	strd	r1, r0, [sp, #20]
 .Ltmp25:
 	.loc	1 49 38 prologue_end            @ sort.c:49:38
-	lsl	r0, r1, #2
-	lsr	r1, r1, #30
+	lsls	r0, r1, #2
+	lsrs	r1, r1, #30
 	.loc	1 49 16 is_stmt 0               @ sort.c:49:16
 	bl	malloc
 	.loc	1 50 40 is_stmt 1               @ sort.c:50:40
@@ -330,8 +335,8 @@ test:
 	.loc	1 49 8                          @ sort.c:49:8
 	str	r0, [sp, #16]
 	.loc	1 50 38                         @ sort.c:50:38
-	lsl	r0, r1, #2
-	lsr	r1, r1, #30
+	lsls	r0, r1, #2
+	lsrs	r1, r1, #30
 	.loc	1 50 16 is_stmt 0               @ sort.c:50:16
 	bl	malloc
 	.loc	1 50 8                          @ sort.c:50:8
@@ -339,182 +344,171 @@ test:
 	.loc	1 55 10 is_stmt 1               @ sort.c:55:10
 	ldr	r0, [sp, #16]
 	.loc	1 55 17 is_stmt 0               @ sort.c:55:17
-	ldr	r1, [r11, #-16]
+	ldr	r1, [sp, #24]
 	.loc	1 55 3                          @ sort.c:55:3
-	mov	r2, #16
-	mov	r3, #0
-	mov	r4, #0
+	movs	r2, #16
+	movs	r3, #0
+	movs	r4, #0
 	bl	memcpy
 	.loc	1 56 10 is_stmt 1               @ sort.c:56:10
 	ldr	r0, [sp, #8]
 	.loc	1 56 17 is_stmt 0               @ sort.c:56:17
-	ldr	r1, [r11, #-16]
+	ldr	r1, [sp, #24]
 	.loc	1 56 3                          @ sort.c:56:3
-	mov	r2, #16
-	mov	r3, #0
+	movs	r2, #16
+	movs	r3, #0
 	bl	memcpy
 	.loc	1 58 18 is_stmt 1               @ sort.c:58:18
 	ldr	r0, [sp, #16]
 	.loc	1 58 3 is_stmt 0                @ sort.c:58:3
-	mov	r1, #4
+	movs	r1, #4
 	bl	insertion_sort
 	.loc	1 59 15 is_stmt 1               @ sort.c:59:15
 	ldr	r0, [sp, #8]
 	.loc	1 59 3 is_stmt 0                @ sort.c:59:3
-	mov	r1, #4
+	movs	r1, #4
 	bl	bubble_sort
 .Ltmp26:
 	.loc	1 67 17 is_stmt 1               @ sort.c:67:17
 	str	r4, [sp, #4]
+.Ltmp27:
 .LBB3_1:                                @ %.customlabel0
                                         @ =>This Inner Loop Header: Depth=1
-.Ltmp27:
-	.loc	1 67 29 is_stmt 0               @ sort.c:67:29
-	ldr	r0, [sp, #20]
-	.loc	1 67 24                         @ sort.c:67:24
-	ldr	r1, [sp, #4]
+	.loc	1 0 0 is_stmt 0                 @ sort.c:0:0
+	ldrd	r0, r1, [sp, #16]
 .Ltmp28:
+	.loc	1 67 24                         @ sort.c:67:24
+	ldr	r2, [sp, #4]
+.Ltmp29:
 	.loc	1 67 3                          @ sort.c:67:3
-	cmp	r1, r0
+	cmp	r2, r1
 	beq	.LBB3_4
 @ %bb.2:                                @ %.customlabel1
                                         @   in Loop: Header=BB3_1 Depth=1
-.Ltmp29:
-	.loc	1 68 5 is_stmt 1                @ sort.c:68:5
-	ldmib	sp, {r0, r1}
-	ldr	r2, [sp, #16]
-	ldr	r1, [r1, r0, lsl #2]
-	ldr	r0, [r2, r0, lsl #2]
 .Ltmp30:
-	.loc	1 68 5 is_stmt 0                @ sort.c:68:5
-	cmp	r0, r1
-	bne	.LBB3_5
+	.loc	1 68 5 is_stmt 1                @ sort.c:68:5
+	ldrd	r1, r2, [sp, #4]
+	ldr.w	r2, [r2, r1, lsl #2]
+	ldr.w	r0, [r0, r1, lsl #2]
 .Ltmp31:
+	.loc	1 68 5 is_stmt 0                @ sort.c:68:5
+	cmp	r0, r2
+	bne	.LBB3_5
+.Ltmp32:
 @ %bb.3:                                @ %.customlabel3
                                         @   in Loop: Header=BB3_1 Depth=1
 	.loc	1 67 36 is_stmt 1               @ sort.c:67:36
 	ldr	r0, [sp, #4]
-	add	r0, r0, #1
+	adds	r0, #1
 	str	r0, [sp, #4]
 	b	.LBB3_1
-.Ltmp32:
+.Ltmp33:
 .LBB3_4:                                @ %.customlabel4
-	.loc	1 70 8                          @ sort.c:70:8
-	ldr	r0, [sp, #16]
-	.loc	1 70 3 is_stmt 0                @ sort.c:70:3
+	.loc	1 70 3                          @ sort.c:70:3
 	bl	free
-	.loc	1 71 8 is_stmt 1                @ sort.c:71:8
+	.loc	1 71 8                          @ sort.c:71:8
 	ldr	r0, [sp, #8]
 	.loc	1 71 3 is_stmt 0                @ sort.c:71:3
 	bl	free
 	.loc	1 72 1 is_stmt 1                @ sort.c:72:1
-	sub	sp, r11, #8
-	pop	{r4, r10, r11, lr}
-	mov	pc, lr
+	add	sp, #32
+	pop	{r4, r6, r7, pc}
 .LBB3_5:                                @ %.customlabel2
-.Ltmp33:
-	.loc	1 68 5                          @ sort.c:68:5
-	ldr	r0, .LCPI3_0
-	ldr	r1, .LCPI3_1
-	ldr	r3, .LCPI3_2
-	mov	r2, #68
-	bl	__assert_fail
 .Ltmp34:
-	.p2align	2
-@ %bb.6:
-	.loc	1 0 5 is_stmt 0                 @ sort.c:0:5
-.LCPI3_0:
-	.long	.L.str
-.LCPI3_1:
-	.long	.L.str.1
-.LCPI3_2:
-	.long	.L__PRETTY_FUNCTION__.test
+	.loc	1 68 5                          @ sort.c:68:5
+	movw	r0, :lower16:.L.str
+	movw	r1, :lower16:.L.str.1
+	movw	r3, :lower16:.L__PRETTY_FUNCTION__.test
+	movs	r2, #68
+	movt	r0, :upper16:.L.str
+	movt	r1, :upper16:.L.str.1
+	movt	r3, :upper16:.L__PRETTY_FUNCTION__.test
+	bl	__assert_fail
+.Ltmp35:
 .Lfunc_end3:
 	.size	test, .Lfunc_end3-test
 	.cfi_endproc
 	.fnend
                                         @ -- End function
 	.globl	main                            @ -- Begin function main
-	.p2align	2
+	.p2align	1
 	.type	main,%function
-	.code	32                              @ @main
+	.code	16                              @ @main
+	.thumb_func
 main:
 .Lfunc_begin4:
-	.loc	1 74 0 is_stmt 1                @ sort.c:74:0
+	.loc	1 74 0                          @ sort.c:74:0
 	.fnstart
 	.cfi_startproc
 @ %bb.0:
-	.save	{r4, r10, r11, lr}
-	push	{r4, r10, r11, lr}
+	.save	{r4, r6, r7, lr}
+	push	{r4, r6, r7, lr}
 	.cfi_def_cfa_offset 16
 	.cfi_offset lr, -4
-	.cfi_offset r11, -8
-	.cfi_offset r10, -12
+	.cfi_offset r7, -8
+	.cfi_offset r6, -12
 	.cfi_offset r4, -16
-	.setfp	r11, sp, #8
-	add	r11, sp, #8
-	.cfi_def_cfa r11, 8
+	.setfp	r7, sp, #8
+	add	r7, sp, #8
+	.cfi_def_cfa r7, 8
 	.pad	#48
-	sub	sp, sp, #48
-	bic	sp, sp, #15
-.Ltmp35:
+	sub	sp, #48
+	mov	r4, sp
+	bfc	r4, #0, #4
+	mov	sp, r4
+.Ltmp36:
 	.loc	1 75 7 prologue_end             @ sort.c:75:7
-	ldr	r1, .LCPI4_0
-	mov	r0, #0
+	movw	r1, :lower16:.L__const.main.input
+	movs	r0, #0
 	add	r4, sp, #16
-	mov	r2, #16
-	mov	r3, #0
+	movs	r2, #16
+	movs	r3, #0
 	str	r0, [sp, #44]
+	movt	r1, :upper16:.L__const.main.input
 	mov	r0, r4
 	bl	memcpy
 	.loc	1 77 3                          @ sort.c:77:3
-	ldr	r0, .LCPI4_1
-	mov	r2, #16
-	mov	r3, #0
+	movw	r0, :lower16:.L.str.2
+	movs	r2, #16
+	movs	r3, #0
+	movt	r0, :upper16:.L.str.2
 	str	r0, [sp]
 	mov	r0, r4
 	bl	klee_make_symbolic
 	.loc	1 78 3                          @ sort.c:78:3
 	mov	r0, r4
-	mov	r1, #4
+	movs	r1, #4
 	bl	test
 	.loc	1 80 3                          @ sort.c:80:3
-	mov	r0, #0
-	sub	sp, r11, #8
-	pop	{r4, r10, r11, lr}
-	mov	pc, lr
-.Ltmp36:
-	.p2align	2
-@ %bb.1:
-	.loc	1 0 3 is_stmt 0                 @ sort.c:0:3
-.LCPI4_0:
-	.long	.L__const.main.input
-.LCPI4_1:
-	.long	.L.str.2
+	sub.w	r4, r7, #8
+	movs	r0, #0
+	mov	sp, r4
+	pop	{r4, r6, r7, pc}
+.Ltmp37:
 .Lfunc_end4:
 	.size	main, .Lfunc_end4-main
 	.cfi_endproc
 	.fnend
                                         @ -- End function
 	.globl	memcpy                          @ -- Begin function memcpy
-	.p2align	2
+	.p2align	1
 	.type	memcpy,%function
-	.code	32                              @ @memcpy
+	.code	16                              @ @memcpy
+	.thumb_func
 memcpy:
 .Lfunc_begin5:
 	.file	2 "/home/isak/Documents/xj/klee-fork/klee" "runtime/Freestanding/memcpy.c"
-	.loc	2 12 0 is_stmt 1                @ runtime/Freestanding/memcpy.c:12:0
+	.loc	2 12 0                          @ runtime/Freestanding/memcpy.c:12:0
 	.fnstart
 	.cfi_startproc
 @ %bb.0:
 	.pad	#40
-	sub	sp, sp, #40
+	sub	sp, #40
 	.cfi_def_cfa_offset 40
-	str	r3, [sp, #20]
-	str	r2, [sp, #16]
+	strd	r2, r3, [sp, #16]
 	str	r1, [sp, #24]
 	str	r0, [sp, #32]
-.Ltmp37:
+.Ltmp38:
 	.loc	2 13 9 prologue_end             @ runtime/Freestanding/memcpy.c:13:9
 	str	r0, [sp, #8]
 	.loc	2 14 15                         @ runtime/Freestanding/memcpy.c:14:15
@@ -522,13 +516,12 @@ memcpy:
 .LBB5_1:                                @ %.customlabel0
                                         @ =>This Inner Loop Header: Depth=1
 	.loc	2 16 13                         @ runtime/Freestanding/memcpy.c:16:13
-	ldr	r0, [sp, #16]
-	ldr	r1, [sp, #20]
+	ldrd	r0, r1, [sp, #16]
 	subs	r2, r0, #1
 	str	r2, [sp, #16]
 	sbc	r2, r1, #0
 	.loc	2 16 16 is_stmt 0               @ runtime/Freestanding/memcpy.c:16:16
-	orrs	r0, r0, r1
+	orrs	r0, r1
 	.loc	2 16 13                         @ runtime/Freestanding/memcpy.c:16:13
 	str	r2, [sp, #20]
 	.loc	2 16 3                          @ runtime/Freestanding/memcpy.c:16:3
@@ -552,18 +545,19 @@ memcpy:
 	.loc	2 18 10 is_stmt 1               @ runtime/Freestanding/memcpy.c:18:10
 	ldr	r0, [sp, #32]
 	.loc	2 18 3 is_stmt 0                @ runtime/Freestanding/memcpy.c:18:3
-	add	sp, sp, #40
-	mov	pc, lr
-.Ltmp38:
+	add	sp, #40
+	bx	lr
+.Ltmp39:
 .Lfunc_end5:
 	.size	memcpy, .Lfunc_end5-memcpy
 	.cfi_endproc
 	.fnend
                                         @ -- End function
 	.globl	memmove                         @ -- Begin function memmove
-	.p2align	2
+	.p2align	1
 	.type	memmove,%function
-	.code	32                              @ @memmove
+	.code	16                              @ @memmove
+	.thumb_func
 memmove:
 .Lfunc_begin6:
 	.file	3 "/home/isak/Documents/xj/klee-fork/klee" "runtime/Freestanding/memmove.c"
@@ -572,13 +566,12 @@ memmove:
 	.cfi_startproc
 @ %bb.0:
 	.pad	#48
-	sub	sp, sp, #48
+	sub	sp, #48
 	.cfi_def_cfa_offset 48
-.Ltmp39:
+.Ltmp40:
 	.loc	3 16 7 prologue_end             @ runtime/Freestanding/memmove.c:16:7
 	cmp	r1, r0
-	str	r3, [sp, #20]
-	str	r2, [sp, #16]
+	strd	r2, r3, [sp, #16]
 	str	r1, [sp, #24]
 	str	r0, [sp, #32]
 	.loc	3 13 9                          @ runtime/Freestanding/memmove.c:13:9
@@ -588,25 +581,24 @@ memmove:
 	.loc	3 16 7                          @ runtime/Freestanding/memmove.c:16:7
 	beq	.LBB6_8
 @ %bb.1:                                @ %.customlabel1
-.Ltmp40:
+.Ltmp41:
 	.loc	3 19 13                         @ runtime/Freestanding/memmove.c:19:13
 	ldr	r0, [sp, #32]
 	.loc	3 19 7 is_stmt 0                @ runtime/Freestanding/memmove.c:19:7
 	ldr	r1, [sp, #24]
-.Ltmp41:
+.Ltmp42:
 	.loc	3 19 7                          @ runtime/Freestanding/memmove.c:19:7
 	cmp	r1, r0
 	bls	.LBB6_5
 @ %bb.2:                                @ %.customlabel2.preheader
 	.loc	3 0 7                           @ runtime/Freestanding/memmove.c:0:7
-	mov	r0, #0
+	movs	r0, #0
 .LBB6_3:                                @ %.customlabel2
                                         @ =>This Inner Loop Header: Depth=1
-.Ltmp42:
+.Ltmp43:
 	.loc	3 20 17 is_stmt 1               @ runtime/Freestanding/memmove.c:20:17
-	ldr	r1, [sp, #16]
-	ldr	r2, [sp, #20]
-	subs	r1, r1, #1
+	ldrd	r1, r2, [sp, #16]
+	subs	r1, #1
 	str	r1, [sp, #16]
 	sbcs	r1, r2, #0
 	str	r1, [sp, #20]
@@ -629,28 +621,27 @@ memmove:
 	.loc	3 21 9                          @ runtime/Freestanding/memmove.c:21:9
 	str	r1, [sp, #8]
 	b	.LBB6_3
-.Ltmp43:
+.Ltmp44:
 .LBB6_5:                                @ %.customlabel4
 	.loc	3 23 7 is_stmt 1                @ runtime/Freestanding/memmove.c:23:7
 	ldr	r0, [sp, #8]
 	.loc	3 23 10 is_stmt 0               @ runtime/Freestanding/memmove.c:23:10
 	ldr	r1, [sp, #16]
 	.loc	3 23 7                          @ runtime/Freestanding/memmove.c:23:7
-	add	r0, r1, r0
-	sub	r0, r0, #1
+	add	r0, r1
+	subs	r0, #1
 	str	r0, [sp, #8]
 	.loc	3 24 7 is_stmt 1                @ runtime/Freestanding/memmove.c:24:7
 	ldr	r0, [sp]
-	add	r0, r1, r0
-	sub	r0, r0, #1
+	add	r0, r1
+	subs	r0, #1
 	str	r0, [sp]
-	mov	r0, #0
+	movs	r0, #0
 .LBB6_6:                                @ %.customlabel5
                                         @ =>This Inner Loop Header: Depth=1
 	.loc	3 25 17                         @ runtime/Freestanding/memmove.c:25:17
-	ldr	r1, [sp, #16]
-	ldr	r2, [sp, #20]
-	subs	r1, r1, #1
+	ldrd	r1, r2, [sp, #16]
+	subs	r1, #1
 	str	r1, [sp, #16]
 	sbcs	r1, r2, #0
 	str	r1, [sp, #20]
@@ -673,16 +664,16 @@ memmove:
 	.loc	3 26 9                          @ runtime/Freestanding/memmove.c:26:9
 	str	r1, [sp, #8]
 	b	.LBB6_6
-.Ltmp44:
+.Ltmp45:
 .LBB6_8:                                @ %.customlabel7
 	.loc	3 0 0                           @ runtime/Freestanding/memmove.c:0:0
 	ldr	r0, [sp, #32]
 	str	r0, [sp, #40]
 	.loc	3 30 1 is_stmt 1                @ runtime/Freestanding/memmove.c:30:1
 	ldr	r0, [sp, #40]
-	add	sp, sp, #48
-	mov	pc, lr
-.Ltmp45:
+	add	sp, #48
+	bx	lr
+.Ltmp46:
 .Lfunc_end6:
 	.size	memmove, .Lfunc_end6-memmove
 	.cfi_endproc
@@ -1019,7 +1010,7 @@ memmove:
 	.long	.Lfunc_begin0                   @ DW_AT_low_pc
 	.long	.Lfunc_end0-.Lfunc_begin0       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
-	.byte	91
+	.byte	87
 	.long	.Linfo_string6                  @ DW_AT_name
 	.byte	1                               @ DW_AT_decl_file
 	.byte	21                              @ DW_AT_decl_line
@@ -1080,7 +1071,7 @@ memmove:
 	.long	.Lfunc_begin1                   @ DW_AT_low_pc
 	.long	.Lfunc_end1-.Lfunc_begin1       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
-	.byte	91
+	.byte	87
 	.long	.Linfo_string7                  @ DW_AT_name
 	.byte	1                               @ DW_AT_decl_file
 	.byte	38                              @ DW_AT_decl_line
@@ -1088,8 +1079,8 @@ memmove:
                                         @ DW_AT_external
 	.byte	3                               @ Abbrev [3] 0xa5:0xe DW_TAG_formal_parameter
 	.byte	2                               @ DW_AT_location
-	.byte	145
-	.byte	120
+	.byte	125
+	.byte	16
 	.long	.Linfo_string14                 @ DW_AT_name
 	.byte	1                               @ DW_AT_decl_file
 	.byte	38                              @ DW_AT_decl_line
@@ -1127,15 +1118,15 @@ memmove:
 	.long	.Lfunc_begin2                   @ DW_AT_low_pc
 	.long	.Lfunc_end2-.Lfunc_begin2       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
-	.byte	91
+	.byte	87
 	.long	.Linfo_string8                  @ DW_AT_name
 	.byte	1                               @ DW_AT_decl_file
 	.byte	8                               @ DW_AT_decl_line
                                         @ DW_AT_prototyped
 	.byte	3                               @ Abbrev [3] 0xf9:0xe DW_TAG_formal_parameter
 	.byte	2                               @ DW_AT_location
-	.byte	145
-	.byte	120
+	.byte	125
+	.byte	16
 	.long	.Linfo_string14                 @ DW_AT_name
 	.byte	1                               @ DW_AT_decl_file
 	.byte	8                               @ DW_AT_decl_line
@@ -1169,7 +1160,7 @@ memmove:
 	.long	.Lfunc_begin3                   @ DW_AT_low_pc
 	.long	.Lfunc_end3-.Lfunc_begin3       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
-	.byte	91
+	.byte	87
 	.long	.Linfo_string9                  @ DW_AT_name
 	.byte	1                               @ DW_AT_decl_file
 	.byte	48                              @ DW_AT_decl_line
@@ -1177,8 +1168,8 @@ memmove:
                                         @ DW_AT_external
 	.byte	3                               @ Abbrev [3] 0x143:0xe DW_TAG_formal_parameter
 	.byte	2                               @ DW_AT_location
-	.byte	145
-	.byte	112
+	.byte	125
+	.byte	24
 	.long	.Linfo_string14                 @ DW_AT_name
 	.byte	1                               @ DW_AT_decl_file
 	.byte	48                              @ DW_AT_decl_line
@@ -1223,7 +1214,7 @@ memmove:
 	.long	.Lfunc_begin4                   @ DW_AT_low_pc
 	.long	.Lfunc_end4-.Lfunc_begin4       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
-	.byte	91
+	.byte	87
 	.long	.Linfo_string10                 @ DW_AT_name
 	.byte	1                               @ DW_AT_decl_file
 	.byte	74                              @ DW_AT_decl_line
@@ -1278,7 +1269,7 @@ memmove:
 	.long	.Lfunc_begin5                   @ DW_AT_low_pc
 	.long	.Lfunc_end5-.Lfunc_begin5       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
-	.byte	91
+	.byte	87
 	.long	.Linfo_string12                 @ DW_AT_name
 	.byte	2                               @ DW_AT_decl_file
 	.byte	12                              @ DW_AT_decl_line
@@ -1369,7 +1360,7 @@ memmove:
 	.long	.Lfunc_begin6                   @ DW_AT_low_pc
 	.long	.Lfunc_end6-.Lfunc_begin6       @ DW_AT_high_pc
 	.byte	1                               @ DW_AT_frame_base
-	.byte	91
+	.byte	87
 	.long	.Linfo_string13                 @ DW_AT_name
 	.byte	3                               @ DW_AT_decl_file
 	.byte	12                              @ DW_AT_decl_line
@@ -1436,9 +1427,11 @@ memmove:
 	.long	0
 .Ldebug_ranges2:
 	.long	.Ltmp26-.Lfunc_begin0
-	.long	.Ltmp32-.Lfunc_begin0
+	.long	.Ltmp27-.Lfunc_begin0
+	.long	.Ltmp28-.Lfunc_begin0
 	.long	.Ltmp33-.Lfunc_begin0
 	.long	.Ltmp34-.Lfunc_begin0
+	.long	.Ltmp35-.Lfunc_begin0
 	.long	0
 	.long	0
 	.section	.debug_str,"MS",%progbits,1
