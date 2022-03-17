@@ -115,6 +115,13 @@ impl BlockCalculator {
                 let mut fn_name = "".to_string();
                 for cap in asm_fn_def.captures_iter(row){
                     fn_name = format!("{}{}", cap[1].to_string().clone(), cap[2].to_string().clone());
+                    //rust name manglng, the name seems to be the same before the 17h
+                    //this means the original program cant have multiple functions with a name containing
+                    //17h if the name is the same before the 17h. 
+                    let rust_mangle_split: Vec<&str> = fn_name.split("17h").collect();
+                    if rust_mangle_split.len() == 2 {
+                        fn_name = rust_mangle_split[0].to_string();
+                    }
                     break;
                 }
                 current_fn = fn_name;
@@ -301,7 +308,14 @@ impl BlockCalculator {
                                 if lr_popped {
                                     unconditional_block = true;
                                 }
-                                let callee_name = split[1].to_string();
+                                let mut callee_name = split[1].to_string();
+                                //rust name manglng, the name seems to be the same before the 17h
+                                //this means the original program cant have multiple functions with a name containing
+                                //17h if the name is the same before the 17h. 
+                                let rust_mangle_split: Vec<&str> = callee_name.split("17h").collect();
+                                if rust_mangle_split.len() == 2 {
+                                    callee_name = rust_mangle_split[0].to_string();
+                                }
                                 let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
                                 old_block.calls.push(callee_name);
                             }

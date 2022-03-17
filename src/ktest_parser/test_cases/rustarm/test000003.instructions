@@ -1,0 +1,11 @@
+InsertValue : 4
+Ret : 5
+GetElementPtr : 14
+Store : 16
+Br : 2
+ICmp : 1
+BitCast : 4
+ExtractValue : 4
+Load : 4
+Call : 13
+Alloca : 10
