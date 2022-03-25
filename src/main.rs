@@ -1,4 +1,6 @@
-use std::{env, path::PathBuf};
+use std::{env, path::PathBuf, process::Command};
+use clap::Arg;
+use clap::Command as App;
 
 //use llvmir_to_m4_cycles::IrToM4;
 mod ktest_parser;
@@ -31,6 +33,55 @@ fn main() {
     for thing in things {
         println!("{:?}", thing);
     }*/
+
+    let matches = App::new("cortex-klee-tools")
+        .version("0.0.1")
+        .author("Lulea University of Technology (LTU)")
+        .about("Static WCET analysis tools for Cortex-M4")
+        .arg(
+            Arg::new("c")
+                .long("c")
+                .takes_value(true)
+                .value_name("FILE_NAME")
+                .conflicts_with("rust")
+                .help("Analyze a c program"),
+        )
+        .arg(
+            Arg::new("rust")
+                .long("rust")
+                .takes_value(true)
+                .value_name("FILE_NAME")
+                .conflicts_with("c")
+                .help("Analyze a rust program"),
+        )
+        .arg(
+            Arg::new("optimize")
+                .long("optimize")
+                .short('o')
+                .help("Analyze optimized IR and assembly"),
+        )
+        .arg(
+            Arg::new("only-output-states-covering-new")
+                .long("only-output-states-covering-new")
+                .short('n')
+                .help("Only analyze test cases covering new code"),
+        )
+        .get_matches();
+
+    let is_c_program = matches.is_present("c");
+    let is_rust_program = matches.is_present("rust");
+    let optimize = matches.is_present("optimize");
+    let new = matches.is_present("only-output-states-covering-new");
+
+    if is_c_program {
+        println!("Analyzing c program: {}", matches.value_of("c").unwrap());
+        analyze_c_program(matches.value_of("c").unwrap().to_string(), optimize, new);
+        return;
+    }
+    else if is_rust_program {
+        println!("Analyzing rust program: {}", matches.value_of("rust").unwrap());
+        todo!();
+    }
   
     let mut dir2 = env::current_dir().unwrap();
     dir2.push("src");
@@ -46,36 +97,73 @@ fn main() {
     run_labeler_and_bc(&dir2, "rust_arm_assembly.ll".to_string(), &dir4);
     //run_labeler(&dir2, "rust_arm_assembly.ll".to_string());
     //check_block_structure(&dir2, "rust_arm_assembly_labeled.s".to_string());
-
 }
 
-pub fn check_block_structure(path: &PathBuf, file_name: String) {
+
+fn analyze_c_program(file_name: String, opt: bool, new: bool) {
+    //TODO: fix include directory, can only be run in examples directory
+    Command::new("clang")
+        .args(["-I../../include", "-emit-llvm", "-c", "-g", "-O0", "-Xclang", "-disable-O0-optnone", &file_name])
+        .status()
+        .expect("failed to run clang");
+
+    let split: Vec<&str> = file_name.split(".").collect();
+    let bc_file_name = format!("{}.bc", split[0]);
+
+    let mut klee = Command::new("klee");
+    if opt {
+        klee.arg("--optimize");
+    }
+    if new {
+        klee.arg("--only-output-states-covering-new");
+    }
+
+    klee.arg(&bc_file_name);
+    klee.status().expect("failed to run KLEE");
+
+    let mut dir = env::current_dir().unwrap();
+    dir.push("klee-last");
+    run_labeler_and_bc(&dir, "assembly.ll".to_string(), &dir)
+}
+
+fn check_block_structure(path: &PathBuf, file_name: String) {
     let mut bc = block_calculator::BlockCalculator::new();
     bc.analyze_file_block_structure(path, &file_name);
     bc.assert_analyzable_block_structure();
 }
 
-pub fn run_labeler(path: &PathBuf, file_name: String) {
+fn run_labeler(path: &PathBuf, file_name: String) {
     //Run the labeling tool
     let mut labeler = llvmir_labeler::Labeler::new();
     let _replaced_string = labeler.label_file(path, &file_name).unwrap();
     labeler.save_file(path, &file_name);
 }
 
-pub fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &PathBuf) {
+fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &PathBuf) {
     //Run the labeling tool
     let mut labeler = llvmir_labeler::Labeler::new();
     let _replaced_string = labeler.label_file(path, &file_name).unwrap();
     labeler.save_file(path, &file_name);
 
+    let file_name_split: Vec<&str> = file_name.split(".").collect();
+    let labeled_asm_file_name = format!("{}_labeled.s", file_name_split[0]);
+    let labeled_file_name = format!("{}_labeled.ll", file_name_split[0]);
+
     //Read the label files
     let labels = ktest_parser::read_labels(path_to_label_files).unwrap();
 
+
+    let path_clone = path.clone();
+    Command::new("llc")
+        .args(["-mtriple=arm-none-eabihf","-mattr=armv7e-m","-mcpu=cortex-m4", path_clone.join(labeled_file_name).to_str().unwrap()])
+        .status()
+        .expect("Failed to compile labeled IR file.");
+
+    println!("Compiled to assembly.");
+
     //Analyze labeled file with BlockCalculator
     let mut bc = block_calculator::BlockCalculator::new();
-    let file_name_split: Vec<&str> = file_name.split(".").collect();
-    let labeled_file_name = format!("{}_labeled.s", file_name_split[0]);
-    bc.analyze_file_block_structure(path, &labeled_file_name);
+    bc.analyze_file_block_structure(path, &labeled_asm_file_name);
 
     //labeler.print_map();
 
