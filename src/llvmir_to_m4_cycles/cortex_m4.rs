@@ -502,11 +502,15 @@ impl StringToCortexM4 {
         if self.instr_map.contains_key(&cc_removed) {
             return self.instr_map.get(&cc_removed).unwrap().clone().get_upper(3, 1, 1) as u32;
         }
-        let s_removed = self.remove_s(&width_removed);
+        let mut s_removed = self.remove_s(&width_removed);
         if self.instr_map.contains_key(&s_removed) {
             return self.instr_map.get(&s_removed).unwrap().clone().get_upper(3, 1, 1) as u32;
         }
         else {
+            s_removed = self.remove_s(&cc_removed);
+            if self.instr_map.contains_key(&s_removed) {
+                return self.instr_map.get(&s_removed).unwrap().clone().get_upper(3, 1, 1) as u32;
+            }
             println!("@@@@@@@@@@@@@@@@@@@@ unrecognized instruction: {} @@@@@@@@@@@@@@@@@@@@ ", instr);
             return 1;
         }

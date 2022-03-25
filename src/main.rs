@@ -1,6 +1,7 @@
 use std::{env, path::PathBuf, process::Command};
 use clap::Arg;
 use clap::Command as App;
+use llvmir_to_m4_cycles::cortex_m4;
 
 //use llvmir_to_m4_cycles::IrToM4;
 mod ktest_parser;
