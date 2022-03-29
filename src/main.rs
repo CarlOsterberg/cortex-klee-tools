@@ -1,7 +1,8 @@
-use std::{env, path::PathBuf, process::Command};
+use std::{env, path::PathBuf, process::Command, fs};
 use clap::Arg;
 use clap::Command as App;
 use llvmir_to_m4_cycles::cortex_m4;
+use regex::Regex;
 
 //use llvmir_to_m4_cycles::IrToM4;
 mod ktest_parser;
@@ -51,7 +52,7 @@ fn main() {
             Arg::new("rust")
                 .long("rust")
                 .takes_value(true)
-                .value_name("FILE_NAME")
+                .value_name("BINARY_NAME")
                 .conflicts_with("c")
                 .help("Analyze a rust program"),
         )
@@ -81,10 +82,10 @@ fn main() {
     }
     else if is_rust_program {
         println!("Analyzing rust program: {}", matches.value_of("rust").unwrap());
-        todo!();
+        analyze_rust_program(matches.value_of("rust").unwrap().to_string(), optimize, new);
     }
   
-    let mut dir2 = env::current_dir().unwrap();
+    /*let mut dir2 = env::current_dir().unwrap();
     dir2.push("src");
     dir2.push("llvmir_labeler");
     dir2.push("test_cases");
@@ -95,18 +96,92 @@ fn main() {
     dir4.push("test_cases");
     dir4.push("rustarm");
 
-    run_labeler_and_bc(&dir2, "rust_arm_assembly.ll".to_string(), &dir4);
+    run_labeler_and_bc(&dir2, "rust_arm_assembly.ll".to_string(), &dir4);*/
     //run_labeler(&dir2, "rust_arm_assembly.ll".to_string());
     //check_block_structure(&dir2, "rust_arm_assembly_labeled.s".to_string());
 }
 
+
+fn analyze_rust_program(bin_name: String, opt: bool, new: bool) {
+    let mut dir = env::current_dir().unwrap();
+    if !dir.join("Cargo.toml").exists() {
+        println!("Could not find Cargo.toml file in current directory");
+        return;
+    }
+    let mut cargo_klee = Command::new("cargo");
+    cargo_klee.arg("klee");
+
+    if opt {
+        cargo_klee.arg("--release");
+    }
+
+    cargo_klee.args(["--bin", &bin_name]);
+    cargo_klee.status().expect("Failed to run cargo klee.");
+
+    if !dir.join(".cargo").exists() {
+        Command::new("mkdir")
+        .arg(".cargo")
+        .status()
+        .expect("Could not create directory .cargo");
+    }
+
+    let config_file_path = dir.join(".cargo").join("config");
+    fs::write(&config_file_path, format!("{}\n{}", "[build]", r#"target = "thumbv7em-none-eabihf""#)).expect("Could not write to config file");
+
+    let mut cargo = Command::new("cargo");
+    cargo.arg("rustc");
+    cargo.args(["--bin", &bin_name]);
+
+    if opt {
+        cargo.arg("--release");
+    }
+
+    cargo.args(["--features", "klee-analysis", "-v", "--color=always", "--", "-C", "linker=true", "-C", "lto", "--emit=llvm-ir"]);
+
+    cargo.status().expect("Could not run cargo rustc");
+
+    fs::write(&config_file_path, "").expect("Could not clear config file");
+
+    let path_to_label_files;
+    let path_to_ll_file;
+
+    if opt {
+        path_to_label_files = dir.join("target/release/deps/klee-last");
+        path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/release/deps");
+    }
+    else {
+        path_to_label_files = dir.join("target/debug/deps/klee-last");
+        path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/debug/deps");
+    }
+    
+    let mut ll_file_name = "".to_string();
+
+    let dir_read = path_to_ll_file.read_dir().expect("Could not read directory with .ll file");
+    for file in dir_read {
+        let file_name_ostr = file.expect("Error reading file.").file_name();
+        let file_name = file_name_ostr.to_str().expect("Could not convert file name to &str");
+        let validator = Regex::new(r".+[.]ll").unwrap();
+        let anti_validator = Regex::new(r"_labeled.ll").unwrap();
+        if validator.is_match(file_name) && !anti_validator.is_match(file_name) {
+            ll_file_name = format!("{}", file_name);
+        }
+    }
+
+    println!("{}", ll_file_name);
+
+    if ll_file_name == "".to_string() {
+        panic!("Could not find .ll file.");
+    }
+
+    run_labeler_and_bc(&path_to_ll_file, ll_file_name, &path_to_label_files)
+}
 
 fn analyze_c_program(file_name: String, opt: bool, new: bool) {
     //TODO: fix include directory, can only be run in examples directory
     Command::new("clang")
         .args(["-I../../include", "-emit-llvm", "-c", "-g", "-O0", "-Xclang", "-disable-O0-optnone", &file_name])
         .status()
-        .expect("failed to run clang");
+        .expect("Failed to run clang.");
 
     let split: Vec<&str> = file_name.split(".").collect();
     let bc_file_name = format!("{}.bc", split[0]);
@@ -120,7 +195,7 @@ fn analyze_c_program(file_name: String, opt: bool, new: bool) {
     }
 
     klee.arg(&bc_file_name);
-    klee.status().expect("failed to run KLEE");
+    klee.status().expect("Failed to run KLEE.");
 
     let mut dir = env::current_dir().unwrap();
     dir.push("klee-last");
