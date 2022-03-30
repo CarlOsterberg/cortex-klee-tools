@@ -129,7 +129,7 @@ impl Labeler {
                     number_as_string = format!("{}{}", number_as_string, c);
                 }
                 if !c.is_numeric() || i == row.len()-1{
-                    if i == row.len()-1{
+                    if i == row.len()-1 && c.is_numeric(){
                         end_index = i + 1;
                     }
                     else{
