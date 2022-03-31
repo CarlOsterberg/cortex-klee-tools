@@ -136,7 +136,7 @@ fn analyze_rust_program(bin_name: String, opt: bool, new: bool) {
         cargo.arg("--release");
     }
 
-    cargo.args(["--features", "klee-analysis", "-v", "--color=always", "--", "-C", "linker=true", "-C", "lto", "--emit=llvm-ir"]);
+    cargo.args(["--features", "klee-analysis", "-v", "--color=always", "--", "-C", "linker=true", "--emit=llvm-ir"]);
 
     cargo.status().expect("Could not run cargo rustc");
 
@@ -147,10 +147,12 @@ fn analyze_rust_program(bin_name: String, opt: bool, new: bool) {
 
     if opt {
         path_to_label_files = dir.join("target/release/deps/klee-last");
+        //path_to_ll_file = dir.join("target/release/deps");
         path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/release/deps");
     }
     else {
         path_to_label_files = dir.join("target/debug/deps/klee-last");
+        //path_to_ll_file = dir.join("target/debug/deps");
         path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/debug/deps");
     }
     
@@ -262,6 +264,10 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
             }
             else {
                 fn_name = pl.0;
+            }
+
+            if !bc.fn_map.contains_key(&fn_name) {
+                panic!("could not find function: {}", fn_name);
             }
 
             let fn_nr = bc.fn_map.get(&fn_name).unwrap();

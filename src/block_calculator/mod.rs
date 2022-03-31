@@ -433,7 +433,7 @@ impl BlockCalculator {
                     if b.llvmir_label.len() < next_tuple.1.len() {
                         continue;
                     }
-                    if b.function == next_tuple.0 && b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1{
+                    if b.function == next_tuple.0 && b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1 {
                         succ_found = true;
                         key = *s;
                     }
@@ -445,7 +445,7 @@ impl BlockCalculator {
             else {
                 assert!(current_block.successors.len() <= 2);
                 println!("performing conditional branch in: {} in function {} (tuple: {:?})", current_block.llvmir_label, current_block.function, key);
-                while *self.block_stack.last().unwrap() != (current_block.function.clone(), current_block.llvmir_label.clone()){
+                /*while *self.block_stack.last().unwrap() != (current_block.function.clone(), current_block.llvmir_label.clone()){
                     println!("{:?}", self.block_stack.pop());
                     //self.block_stack.pop();
                 }
@@ -453,7 +453,61 @@ impl BlockCalculator {
                 while *self.block_stack.last().unwrap() == (current_block.function.clone(), current_block.llvmir_label.clone()){
                     println!("{:?}", self.block_stack.pop());
                     //self.block_stack.pop();
+                }*/
+                while self.block_stack.len() > 0 {
+                    let block_name = self.block_stack.pop().unwrap();
+                    println!("{:?}", block_name);
+                    if block_name == (current_block.function.clone(), current_block.llvmir_label.clone()) {
+                        self.block_stack.push(block_name);
+                        break;
+                    }
+                    let block_name_split: Vec<&str> = current_block.llvmir_label.split(".").collect();
+                    if block_name_split.len() < 2 {
+                        continue;
+                    }
+                    let mut suffix_removed = "".to_string();
+                    for i in 0..block_name_split.len() - 1 {
+                        if suffix_removed == "".to_string() {
+                            suffix_removed = format!("{}{}", suffix_removed, block_name_split[i]);
+                        }
+                        else {
+                            suffix_removed = format!("{}.{}", suffix_removed, block_name_split[i]);
+                        }
+                    }
+                    println!("suffix removed. {:?}", suffix_removed);
+                    if block_name == (current_block.function.clone(), suffix_removed) {
+                        self.block_stack.push(block_name);
+                        break;
+                    }
                 }
+
+                while self.block_stack.len() > 0 {
+                    let block_name = self.block_stack.pop().unwrap();
+                    println!("{:?}", block_name);
+                    let block_name_split: Vec<&str> = current_block.llvmir_label.split(".").collect();
+                    if block_name_split.len() < 2 {
+                        if block_name != (current_block.function.clone(), current_block.llvmir_label.clone()) {
+                            println!("found {:?} which is not equal to our block, this will be our branch target", block_name);
+                            break;
+                        }
+                        continue;
+                    }
+                    let mut suffix_removed = "".to_string();
+                    for i in 0..block_name_split.len() - 1 {
+                        if suffix_removed == "".to_string() {
+                            suffix_removed = format!("{}{}", suffix_removed, block_name_split[i]);
+                        }
+                        else {
+                            suffix_removed = format!("{}.{}", suffix_removed, block_name_split[i]);
+                        }
+                    }
+                    println!("suffix removed. {:?}", suffix_removed);
+                    if block_name != (current_block.function.clone(), suffix_removed) {
+                        println!("found {:?} which is not equal to our block, this will be our branch target", block_name);
+                        break;
+                    }
+                }
+
                 let next_tuple = &self.block_stack[self.block_stack.len() - 1];
                 println!("target tuple: {:?}", next_tuple);
                 //let next_tuple = self.block_stack.pop().unwrap();
@@ -501,6 +555,9 @@ impl BlockCalculator {
                         let mut second_cycles = 0;
 
                         for p in first.1 {
+                            if p.label.len() < next_tuple.1.len() {
+                                continue;
+                            }
                             if p.label[0..next_tuple.1.len()] == next_tuple.1 {
                                 first_contains = true;
                                 first_key = p.key;
