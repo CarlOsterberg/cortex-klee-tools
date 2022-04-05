@@ -60,7 +60,7 @@ fn main() {
             Arg::new("optimize")
                 .long("optimize")
                 .short('o')
-                .help("Analyze optimized IR and assembly"),
+                .help("Analyze optimized IR and assembly (Always true for rust)"),
         )
         .arg(
             Arg::new("only-output-states-covering-new")
@@ -82,7 +82,7 @@ fn main() {
     }
     else if is_rust_program {
         println!("Analyzing rust program: {}", matches.value_of("rust").unwrap());
-        analyze_rust_program(matches.value_of("rust").unwrap().to_string(), optimize, new);
+        analyze_rust_program(matches.value_of("rust").unwrap().to_string(), true, new);
     }
   
     /*let mut dir2 = env::current_dir().unwrap();
@@ -108,6 +108,11 @@ fn analyze_rust_program(bin_name: String, opt: bool, new: bool) {
         println!("Could not find Cargo.toml file in current directory");
         return;
     }
+
+    let config_file_path = dir.join(".cargo").join("config");
+    fs::write(&config_file_path, format!("{}\n{}", "[build]", r#"target = "thumbv7em-none-eabihf""#)).expect("Could not write to config file");
+
+
     let mut cargo_klee = Command::new("cargo");
     cargo_klee.arg("klee");
 
@@ -125,55 +130,19 @@ fn analyze_rust_program(bin_name: String, opt: bool, new: bool) {
         .expect("Could not create directory .cargo");
     }
 
-    let config_file_path = dir.join(".cargo").join("config");
-    fs::write(&config_file_path, format!("{}\n{}", "[build]", r#"target = "thumbv7em-none-eabihf""#)).expect("Could not write to config file");
-
-    let mut cargo = Command::new("cargo");
-    cargo.arg("rustc");
-    cargo.args(["--bin", &bin_name]);
-
-    if opt {
-        cargo.arg("--release");
-    }
-
-    cargo.args(["--features", "klee-analysis", "-v", "--color=always", "--", "-C", "linker=true", "-C", "lto", "--emit=llvm-ir"]);
-
-    cargo.status().expect("Could not run cargo rustc");
-
-    fs::write(&config_file_path, "").expect("Could not clear config file");
-
     let path_to_label_files;
     let path_to_ll_file;
 
     if opt {
-        path_to_label_files = dir.join("target/release/deps/klee-last");
-        path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/release/deps");
+        path_to_label_files = dir.join("target/thumbv7em-none-eabihf/release/deps/klee-last");
+        path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/release/deps/klee-last");
     }
     else {
-        path_to_label_files = dir.join("target/debug/deps/klee-last");
-        path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/debug/deps");
-    }
-    
-    let mut ll_file_name = "".to_string();
-
-    let dir_read = path_to_ll_file.read_dir().expect("Could not read directory with .ll file");
-    for file in dir_read {
-        let file_name_ostr = file.expect("Error reading file.").file_name();
-        let file_name = file_name_ostr.to_str().expect("Could not convert file name to &str");
-        let validator = Regex::new(r".+[.]ll").unwrap();
-        let anti_validator = Regex::new(r"_labeled.ll").unwrap();
-        if validator.is_match(file_name) && !anti_validator.is_match(file_name) {
-            ll_file_name = format!("{}", file_name);
-        }
+        path_to_label_files = dir.join("target/thumbv7em-none-eabihf/debug/deps/klee-last");
+        path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/debug/deps/klee-last");
     }
 
-    println!("{}", ll_file_name);
-
-    if ll_file_name == "".to_string() {
-        panic!("Could not find .ll file.");
-    }
-
-    run_labeler_and_bc(&path_to_ll_file, ll_file_name, &path_to_label_files)
+    run_labeler_and_bc(&path_to_ll_file, "assembly.ll".to_string(), &path_to_label_files)
 }
 
 fn analyze_c_program(file_name: String, opt: bool, new: bool) {
