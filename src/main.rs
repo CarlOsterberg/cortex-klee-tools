@@ -14,28 +14,6 @@ mod block_calculator;
 //https://github.com/klee/klee/blob/master/tools/ktest-tool/ktest-tool
 
 fn main() {
-    /*let mut dir = env::current_dir().unwrap();
-    dir.push("src");
-    dir.push("ktest_parser");
-    dir.push("test_cases");
-    dir.push("getsign");
-    let ktests = llvmir_to_m4_cycles::IrToM4::read_dir(dir.clone()).unwrap();
-    for ktest in ktests {
-        let (name,ir_to_m4_vec) = ktest;
-        let mut sum_upper = 0;
-        let mut sum_lower = 0;
-        for ir_to_m4 in ir_to_m4_vec {
-            sum_upper += ir_to_m4.clone().get_upper(3, 1, 1);
-            sum_lower += ir_to_m4.get_lower(0,1,1);
-        }
-        println!("{:?} lower: {:?}, upper: {:?}",name,sum_lower,sum_upper);
-    }
-    let things = ktest_parser::read_ktests(dir).unwrap();
-
-    for thing in things {
-        println!("{:?}", thing);
-    }*/
-
     let matches = App::new("cortex-klee-tools")
         .version("0.0.1")
         .author("Lulea University of Technology (LTU)")
@@ -166,14 +144,14 @@ fn analyze_rust_program(bin_name: String, opt: bool, new: bool) {
             ll_file_name = format!("{}", file_name);
         }
     }
+    run_ir_to_cycles(path_to_label_files.clone());
 
     println!("{}", ll_file_name);
 
     if ll_file_name == "".to_string() {
         panic!("Could not find .ll file.");
     }
-
-    run_labeler_and_bc(&path_to_ll_file, ll_file_name, &path_to_label_files)
+    run_labeler_and_bc(&path_to_ll_file, ll_file_name, &path_to_label_files);
 }
 
 fn analyze_c_program(file_name: String, opt: bool, new: bool) {
@@ -199,6 +177,7 @@ fn analyze_c_program(file_name: String, opt: bool, new: bool) {
 
     let mut dir = env::current_dir().unwrap();
     dir.push("klee-last");
+    run_ir_to_cycles(dir.clone());
     run_labeler_and_bc(&dir, "assembly.ll".to_string(), &dir)
 }
 
@@ -230,7 +209,7 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
 
 
     let path_clone = path.clone();
-    Command::new("llc")
+    Command::new("llc-13")
         .args(["-mtriple=arm-none-eabihf","-mattr=armv7e-m","-mcpu=cortex-m4", path_clone.join(labeled_file_name).to_str().unwrap()])
         .status()
         .expect("Failed to compile labeled IR file.");
@@ -297,5 +276,23 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
 
         println!("Estimated cycles: {}", bc.cycles);
         println!("paths run: {}", label_file_count);
+    }
+}
+
+fn run_ir_to_cycles(ktest_location: PathBuf) {
+    match llvmir_to_m4_cycles::IrToM4::read_dir(ktest_location) {
+        Ok(ktests) => {
+            for ktest in ktests {
+                let (name,ir_to_m4_vec) = ktest;
+                let mut sum_upper = 0;
+                let mut sum_lower = 0;
+                for ir_to_m4 in ir_to_m4_vec {
+                    sum_upper += ir_to_m4.clone().get_upper(3, 1, 1);
+                    sum_lower += ir_to_m4.get_lower(0,1,1);
+                }
+                println!("{:?} lower: {:?}, upper: {:?}",name,sum_lower,sum_upper);
+            }
+        },
+        Err(msg) => println!("{}", msg),
     }
 }
