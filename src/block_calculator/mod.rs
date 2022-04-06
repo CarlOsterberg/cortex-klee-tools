@@ -28,6 +28,7 @@ pub struct BlockCalculator {
     block_stack: Vec<(String, String)>,
     pub cycles: u64,
     string_to_cycles: StringToCortexM4,
+    label_set: HashSet<String>,
 }
 
 pub struct Path{
@@ -90,8 +91,13 @@ impl BlockCalculator {
             block_stack: Vec::new(),
             cycles: 0,
             string_to_cycles: StringToCortexM4::new(),
+            label_set: HashSet::new(),
         }
 
+    }
+
+    pub fn set_label_set(&mut self, set: HashSet<String>) {
+        self.label_set = set;
     }
 
     //Constructs a Block struct for every block in the assembly file and inserts it into self.block_map
@@ -433,7 +439,9 @@ impl BlockCalculator {
                     if b.llvmir_label.len() < next_tuple.1.len() {
                         continue;
                     }
-                    if b.function == next_tuple.0 && b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1{
+                    if b.function == next_tuple.0 && //function name has to be the same
+                        ((b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1 && !self.label_set.contains(&b.llvmir_label))
+                        || b.llvmir_label == next_tuple.1){
                         succ_found = true;
                         key = *s;
                     }
@@ -456,15 +464,18 @@ impl BlockCalculator {
                 }
                 let next_tuple = &self.block_stack[self.block_stack.len() - 1];
                 println!("target tuple: {:?}", next_tuple);
-                //let next_tuple = self.block_stack.pop().unwrap();
                 let mut succ_found = false;
                 for s in &current_block.successors {
                     let b = self.block_map.get(s).unwrap();
-                    //if b.function == next_tuple.0 && b.llvmir_label == next_tuple.1 {
+                    //The label should not be shorter in the assembly code
                     if b.llvmir_label.len() < next_tuple.1.len() {
                         continue;
                     }
-                    if b.function == next_tuple.0 && b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1{
+                    //The assembly label can be longer but we need to make sure it is not just another block
+                    //for which our target block was a substring in the IR.
+                    if b.function == next_tuple.0 && //function name has to be the same
+                        ((b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1 && !self.label_set.contains(&b.llvmir_label))
+                        || b.llvmir_label == next_tuple.1){
                         succ_found = true;
                         key = *s;
                     }
@@ -474,84 +485,146 @@ impl BlockCalculator {
                         return;
                     }
                     println!("Could not find succcessor after block: {}", current_block.llvmir_label);
-                    //key = current_block.successors[0];
-                    if self.block_map.get(&current_block.successors[0]).unwrap().direct_label {
-                        key = current_block.successors[1];
-                        println!("branching to block: {:?}", key);
+                    
+                    //Explore ahead to try to find the label
+                    assert!(current_block.successors.len() == 2);
+                    println!("exploring ahead to find the labels");
+
+                    let first = self.explore_paths_ahead(&current_block.successors[0], 0);
+                    let second = self.explore_paths_ahead(&current_block.successors[1], 0);
+
+                    let mut first_contains = false;
+                    let mut second_contains = false;
+
+                    let mut first_key = (0,0);
+                    let mut second_key = (0,0);
+
+                    let mut first_cycles = 0;
+                    let mut second_cycles = 0;
+
+                    for p in &first.1 {
+                        if p.label.len() < next_tuple.1.len() {
+                            continue;
+                        }
+                        if (p.label[0..next_tuple.1.len()] == next_tuple.1 && !self.label_set.contains(&p.label))
+                            || (p.label == next_tuple.1){
+                            first_contains = true;
+                            first_key = p.key;
+                            first_cycles = p.cycles;
+                        }
                     }
-                    else if self.block_map.get(&current_block.successors[1]).unwrap().direct_label {
-                        key = current_block.successors[0];
-                        println!("branching to block: {:?}", key);
+
+                    for p in &second.1 {
+                        if p.label.len() < next_tuple.1.len() {
+                            continue;
+                        }
+                        if (p.label[0..next_tuple.1.len()] == next_tuple.1 && !self.label_set.contains(&p.label))
+                            || (p.label == next_tuple.1){
+                            second_contains = true;
+                            second_key = p.key;
+                            second_cycles = p.cycles;
+                        }
                     }
-                    else {
-                        //Explore ahead to try to find the label
-                        assert!(current_block.successors.len() == 2);
-                        println!("exploring ahead to find the label");
 
-                        let first = self.explore_paths_ahead(&current_block.successors[0], 0);
-                        let second = self.explore_paths_ahead(&current_block.successors[1], 0);
-
-                        let mut first_contains = false;
-                        let mut second_contains = false;
-
-                        let mut first_key = (0,0);
-                        let mut second_key = (0,0);
-
-                        let mut first_cycles = 0;
-                        let mut second_cycles = 0;
-
-                        for p in first.1 {
-                            if p.label[0..next_tuple.1.len()] == next_tuple.1 {
-                                first_contains = true;
-                                first_key = p.key;
-                                first_cycles = p.cycles;
-                            }
-                        }
-
-                        for p in second.1 {
-                            if p.label[0..next_tuple.1.len()] == next_tuple.1 {
-                                second_contains = true;
-                                second_key = p.key;
-                                second_cycles = p.cycles;
-                            }
-                        }
-
-                        if first_contains && second_contains {
-                            println!("Two paths to the target label, selecting the longer path");
-                            if first_cycles > second_cycles {
-                                key = first_key;
-                                self.cycles += first_cycles;
-                            }
-                            else {
-                                key = second_key;
-                                self.cycles += second_cycles
-                            }
-                        }
-                        else if first_contains {
+                    if first_contains && second_contains {
+                        println!("Two paths to the target label, selecting the longer path");
+                        if first_cycles > second_cycles {
                             key = first_key;
                             self.cycles += first_cycles;
                         }
-                        else if second_contains {
-                            key = second_key;
-                            self.cycles += second_cycles;
-                        }
                         else {
-                            println!("could not find label, attempting return");
-                            if first.0 && second.0 {
-                                println!("two paths can return, selecting the longer one");
-                                self.cycles += cmp::max(first.2, second.2);
-                            }
-                            else if first.0 {
-                                self.cycles += first.2;
-                            }
-                            else if second.0 {
-                                self.cycles += second.2;
-                            }
-                            else {
-                                panic!("could not return");
-                            }
+                            key = second_key;
+                            self.cycles += second_cycles
+                        }
+                    }
+                    else if first_contains {
+                        key = first_key;
+                        self.cycles += first_cycles;
+                    }
+                    else if second_contains {
+                        key = second_key;
+                        self.cycles += second_cycles;
+                    }
+                    else {
+                        println!("could not find label, attempting return");
+                        if first.0 && second.0 {
+                            println!("two paths can return, selecting the longer one");
+                            self.cycles += cmp::max(first.2, second.2);
                             return;
                         }
+                        else if first.0 {
+                            self.cycles += first.2;
+                            return;
+                        }
+                        else if second.0 {
+                            self.cycles += second.2;
+                            return;
+                        }
+                        else {
+                            //panic!("could not return");
+                            let mut available_labels = HashSet::new();
+                            for p in &first.1 {
+                                if !available_labels.contains(&p.label) {
+                                    available_labels.insert(p.label.clone());
+                                }
+                            }
+                            for p in &second.1 {
+                                if !available_labels.contains(&p.label) {
+                                    available_labels.insert(p.label.clone());
+                                }
+                            }
+                            let mut label = "".to_string();
+                            while self.block_stack.len() > 0 {
+                                let label_tuple = self.block_stack.pop().unwrap();
+                                if available_labels.contains(&label_tuple.1) {
+                                    label = label_tuple.1.clone();
+                                    self.block_stack.push(label_tuple); //push it back for use later
+                                    break;
+                                }
+                            }
+
+                            for p in &first.1 {
+                                if p.label == label {
+                                    first_contains = true;
+                                    first_key = p.key;
+                                    first_cycles = p.cycles;
+                                }
+                            }
+        
+                            for p in &second.1 {
+
+                                if p.label == label{
+                                    second_contains = true;
+                                    second_key = p.key;
+                                    second_cycles = p.cycles;
+                                }
+                            }
+        
+                            if first_contains && second_contains {
+                                println!("Two paths to the target label, selecting the longer path");
+                                if first_cycles > second_cycles {
+                                    key = first_key;
+                                    self.cycles += first_cycles;
+                                }
+                                else {
+                                    key = second_key;
+                                    self.cycles += second_cycles
+                                }
+                                continue;
+                            }
+                            else if first_contains {
+                                key = first_key;
+                                self.cycles += first_cycles;
+                                continue;
+                            }
+                            else if second_contains {
+                                key = second_key;
+                                self.cycles += second_cycles;
+                                continue;
+                            }
+
+                        }
+                        return;
                     }
                 }
             }
