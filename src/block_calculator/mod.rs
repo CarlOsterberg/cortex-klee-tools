@@ -28,7 +28,8 @@ pub struct BlockCalculator {
     block_stack: Vec<(String, String)>,
     pub cycles: u64,
     string_to_cycles: StringToCortexM4,
-    label_set: HashSet<String>,
+    ir_label_set: HashSet<(String, String)>,
+    asm_label_set: HashSet<(String, String)>,
 }
 
 pub struct Path{
@@ -91,13 +92,14 @@ impl BlockCalculator {
             block_stack: Vec::new(),
             cycles: 0,
             string_to_cycles: StringToCortexM4::new(),
-            label_set: HashSet::new(),
+            ir_label_set: HashSet::new(),
+            asm_label_set: HashSet::new(),
         }
 
     }
 
-    pub fn set_label_set(&mut self, set: HashSet<String>) {
-        self.label_set = set;
+    pub fn set_label_set(&mut self, set: HashSet<(String, String)>) {
+        self.ir_label_set = set;
     }
 
     //Constructs a Block struct for every block in the assembly file and inserts it into self.block_map
@@ -151,6 +153,7 @@ impl BlockCalculator {
                     };
                     label_used = true;
                     self.block_map.insert((current_fn_nr, current_block_nr), prev_block);
+                    self.asm_label_set.insert((current_fn.clone(), current_block_label.clone()));
                 }
                 block_cycles = 0;
                 current_block_nr += 1;
@@ -177,6 +180,7 @@ impl BlockCalculator {
                     };
                     label_used = true;
                     self.block_map.insert((current_fn_nr, current_block_nr), prev_block);
+                    self.asm_label_set.insert((current_fn.clone(), current_block_label.clone()));
                 }
                 block_cycles = 0;
                 current_block_nr += 1;
@@ -202,6 +206,7 @@ impl BlockCalculator {
                 };
                 label_used = true;
                 self.block_map.insert((current_fn_nr, current_block_nr), prev_block);
+                self.asm_label_set.insert((current_fn.clone(), current_block_label.clone()));
                 block_cycles = 0;
             }
             if asm_instruction.is_match(row) {
@@ -429,6 +434,7 @@ impl BlockCalculator {
                     println!("{:?}", self.block_stack.pop());
                     //self.block_stack.pop();
                 }
+
                 let next_tuple = &self.block_stack[self.block_stack.len() - 1];
                 println!("target tuple: {:?}", next_tuple);
                 //let next_tuple = self.block_stack.pop().unwrap();
@@ -440,7 +446,7 @@ impl BlockCalculator {
                         continue;
                     }
                     if b.function == next_tuple.0 && //function name has to be the same
-                        ((b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1 && !self.label_set.contains(&b.llvmir_label))
+                        ((b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1 && !self.ir_label_set.contains(&(b.function.clone(), b.llvmir_label.clone())))
                         || b.llvmir_label == next_tuple.1){
                         succ_found = true;
                         key = *s;
@@ -453,16 +459,19 @@ impl BlockCalculator {
             else {
                 assert!(current_block.successors.len() <= 2);
                 println!("performing conditional branch in: {} in function {} (tuple: {:?})", current_block.llvmir_label, current_block.function, key);
+                //Pop the block stack until we find the current block
                 while *self.block_stack.last().unwrap() != (current_block.function.clone(), current_block.llvmir_label.clone()){
                     println!("{:?}", self.block_stack.pop());
                     //self.block_stack.pop();
                 }
+                
                 //pop all the calls and find the next block
                 while *self.block_stack.last().unwrap() == (current_block.function.clone(), current_block.llvmir_label.clone()){
                     println!("{:?}", self.block_stack.pop());
                     //self.block_stack.pop();
                 }
-                let next_tuple = &self.block_stack[self.block_stack.len() - 1];
+
+                let mut next_tuple = &self.block_stack[self.block_stack.len() - 1];
                 println!("target tuple: {:?}", next_tuple);
                 let mut succ_found = false;
                 for s in &current_block.successors {
@@ -474,176 +483,67 @@ impl BlockCalculator {
                     //The assembly label can be longer but we need to make sure it is not just another block
                     //for which our target block was a substring in the IR.
                     if b.function == next_tuple.0 && //function name has to be the same
-                        ((b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1 && !self.label_set.contains(&b.llvmir_label))
+                    ((b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1 && !self.ir_label_set.contains(&(b.function.clone(), b.llvmir_label.clone())))
                         || b.llvmir_label == next_tuple.1){
+                        println!("found ({}, {}), branching there", b.function, b.llvmir_label);
                         succ_found = true;
                         key = *s;
+                        break;
                     }
                 }
-                if !succ_found {
-                    if current_block.conditional_return {
-                        return;
-                    }
-                    println!("Could not find succcessor after block: {}", current_block.llvmir_label);
-                    
-                    //Explore ahead to try to find the label
-                    assert!(current_block.successors.len() == 2);
-                    println!("exploring ahead to find the labels");
+                if succ_found {
+                    continue;
+                }
+                //Successor not found, check if we should return
+                /*if current_block.conditional_return && current_block.function != next_tuple.0 {
+                    return;
+                }*/
+                if current_block.conditional_return {
+                    return;
+                }
+                println!("Could not find succcessor after block: {}", current_block.llvmir_label);
 
-                    let first = self.explore_paths_ahead(&current_block.successors[0], 0);
-                    let second = self.explore_paths_ahead(&current_block.successors[1], 0);
-
-                    let mut first_contains = false;
-                    let mut second_contains = false;
-
-                    let mut first_key = (0,0);
-                    let mut second_key = (0,0);
-
-                    let mut first_cycles = 0;
-                    let mut second_cycles = 0;
-
-                    for p in &first.1 {
-                        if p.label.len() < next_tuple.1.len() {
-                            continue;
-                        }
-                        if (p.label[0..next_tuple.1.len()] == next_tuple.1 && !self.label_set.contains(&p.label))
-                            || (p.label == next_tuple.1){
-                            first_contains = true;
-                            first_key = p.key;
-                            first_cycles = p.cycles;
-                        }
-                    }
-
-                    for p in &second.1 {
-                        if p.label.len() < next_tuple.1.len() {
-                            continue;
-                        }
-                        if (p.label[0..next_tuple.1.len()] == next_tuple.1 && !self.label_set.contains(&p.label))
-                            || (p.label == next_tuple.1){
-                            second_contains = true;
-                            second_key = p.key;
-                            second_cycles = p.cycles;
-                        }
-                    }
-
-                    if first_contains && second_contains {
-                        println!("Two paths to the target label, selecting the longer path");
-                        if first_cycles > second_cycles {
-                            key = first_key;
-                            self.cycles += first_cycles;
-                        }
-                        else {
-                            key = second_key;
-                            self.cycles += second_cycles
-                        }
-                    }
-                    else if first_contains {
-                        key = first_key;
-                        self.cycles += first_cycles;
-                    }
-                    else if second_contains {
-                        key = second_key;
-                        self.cycles += second_cycles;
-                    }
-                    else {
-                        println!("could not find label, attempting return");
-                        if first.0 && second.0 {
-                            println!("two paths can return, selecting the longer one");
-                            self.cycles += cmp::max(first.2, second.2);
+                
+                loop {
+                    //We should try to return
+                    if next_tuple.0 != current_block.function {
+                        println!("attempting to return");
+                        let first_path_to_return = self.unconditional_path_to_return(&current_block.successors[0], 0);
+                        let second_path_to_return = self.unconditional_path_to_return(&current_block.successors[1], 0);
+                        assert!(!(first_path_to_return.0 && second_path_to_return.0));
+                        if first_path_to_return.0 {
+                            self.cycles += first_path_to_return.1;
+                            println!("returning");
                             return;
                         }
-                        else if first.0 {
-                            self.cycles += first.2;
+                        if second_path_to_return.0 {
+                            self.cycles += second_path_to_return.1;
+                            println!("returning");
                             return;
                         }
-                        else if second.0 {
-                            self.cycles += second.2;
-                            return;
-                        }
-                        else {
-                            //panic!("could not return");
-                            let mut available_labels = HashSet::new();
-                            for p in &first.1 {
-                                if !available_labels.contains(&p.label) {
-                                    available_labels.insert(p.label.clone());
-                                }
-                            }
-                            for p in &second.1 {
-                                if !available_labels.contains(&p.label) {
-                                    available_labels.insert(p.label.clone());
-                                }
-                            }
-                            let mut label = "".to_string();
-                            println!("looking for another label:");
-                            while self.block_stack.len() > 0 {
-                                let label_tuple = self.block_stack.pop().unwrap();
-                                if available_labels.contains(&label_tuple.1) && label_tuple.0 == current_block.function{
-                                    label = label_tuple.1.clone();
-                                    println!("{:?}", label_tuple);
-                                    self.block_stack.push(label_tuple); //push it back for use later
-                                    break;
-                                }
-                            }
-
-                            for p in &first.1 {
-                                if p.label == label {
-                                    first_contains = true;
-                                    first_key = p.key;
-                                    first_cycles = p.cycles;
-                                }
-                            }
-        
-                            for p in &second.1 {
-                                if p.label == label{
-                                    second_contains = true;
-                                    second_key = p.key;
-                                    second_cycles = p.cycles;
-                                }
-                            }
-        
-                            if first_contains && second_contains {
-                                println!("Two paths to the target label, selecting the longer path");
-                                if first_cycles > second_cycles {
-                                    key = first_key;
-                                    self.cycles += first_cycles;
-                                }
-                                else {
-                                    key = second_key;
-                                    self.cycles += second_cycles
-                                }
-                                continue;
-                            }
-                            else if first_contains {
-                                key = first_key;
-                                self.cycles += first_cycles;
-                                continue;
-                            }
-                            else if second_contains {
-                                key = second_key;
-                                self.cycles += second_cycles;
-                                continue;
-                            }
-
-                            else {
-                                let first_path_to_return = self.unconditional_path_to_return(&current_block.successors[0], 0);
-                                let second_path_to_return = self.unconditional_path_to_return(&current_block.successors[1], 0);
-                                println!("{:?}", first_path_to_return);
-                                println!("{:?}", second_path_to_return);
-                                assert!(!(first_path_to_return.0 && second_path_to_return.0));
-                                if first_path_to_return.0 {
-                                    self.cycles += first_path_to_return.1;
-                                    return;
-                                }
-                                if second_path_to_return.0 {
-                                    self.cycles += second_path_to_return.1;
-                                    return;
-                                }
-                                panic!("could not return");
-                            }
-
-                        }
-                        return;
+                        panic!("could not return");
                     }
+
+                    if self.asm_label_set.contains(&next_tuple) {
+                        println!("attempting to find {:?}", next_tuple);
+                        let first_path_to_label = self.unconditional_path_to_label(&current_block.successors[0], next_tuple.1.clone());
+                        let second_path_to_label = self.unconditional_path_to_label(&current_block.successors[1], next_tuple.1.clone());
+                        assert!(!(first_path_to_label.0 && second_path_to_label.0));
+                        if first_path_to_label.0 {
+                            key = current_block.successors[0];
+                            println!("found {:?}, branching there", next_tuple);
+                            break;
+                        }
+                        if second_path_to_label.0 {
+                            key = current_block.successors[1];
+                            println!("found {:?}, branching there", next_tuple);
+                            break;
+                        }
+                        panic!("could not find path to label");
+                    }
+                    //pop once to find the next block
+                    self.block_stack.pop();
+                    next_tuple = &self.block_stack[self.block_stack.len() - 1];
                 }
             }
         }
@@ -665,7 +565,6 @@ impl BlockCalculator {
                                 let x = file_content_read_res.unwrap();
                                 self.build_map_first_pass(&x);
                                 self.build_map_second_pass(&x);
-                                self.print_maps();
                                 return;
                             }
                         }
@@ -751,6 +650,33 @@ impl BlockCalculator {
     }
 
 
+    pub fn unconditional_path_to_label(&self, key: &(i32, i32), label: String) -> (bool, u64){
+        let mut current_key = key;
+        let mut current_cycles = 0;
+        let mut current_block = self.block_map.get(current_key).unwrap();
+
+        if current_block.llvmir_label == label {
+            return (true, 0);
+        }
+
+        else if current_block.successors.len() > 1 {
+            return (false, 0);
+        }
+
+        while current_block.successors.len() == 1 && current_block.llvmir_label != label{
+            current_key = &current_block.successors[0];
+            current_block = self.block_map.get(current_key).unwrap();
+            current_cycles += current_block.cycles;
+        }
+
+        if current_block.llvmir_label == label {
+            return (true, current_cycles);
+        }
+
+        return (false, 0);
+    }
+
+
     pub fn assert_analyzable_block_structure(&mut self) {
         let mut ok_count = 0;
         let mut fail_count = 0;
@@ -821,5 +747,16 @@ impl BlockCalculator {
         for (key, value) in &self.fn_map {
             println!("entry: {}, {}", key, value);
         }
+
+        println!("ir label set: ");
+        for l in &self.ir_label_set {
+            println!("{:?}", l);
+        }
+
+        println!("asm label set:"); 
+        for l in &self.asm_label_set {
+            println!("{:?}", l);
+        }
     }
+    
 }

@@ -227,7 +227,7 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
             else {
                 fn_name = pl.0.clone();
             }
-
+            
             let fn_nr = bc.fn_map.get(&fn_name).unwrap();
             let percent_removed = &pl.1[1..pl.1.len()];
             let label_number = percent_removed.parse::<u32>();
@@ -235,21 +235,26 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
                 //if labeler has replaced the number with a new label, push that instead
                 if labeler.label_map.contains_key(&(label_number.clone().unwrap().to_string(), *fn_nr)) {
                     let block_name = labeler.label_map.get(&(label_number.unwrap().to_string(), *fn_nr)).unwrap().to_string();
-                    label_set.insert(block_name.clone());
+                    label_set.insert((fn_name.clone(), block_name.clone()));
                     continue;
                 }
                 //A number name which has not been replaced has to be the initial block
                 else {
-                    label_set.insert("initial_fn_block".to_string());
+                    label_set.insert((fn_name.clone(), "initial_fn_block".to_string()));
                 }
             }
             //Label already had a name before the labeling tool
             else {
-                label_set.insert(pl.1.clone());
+                label_set.insert((fn_name.clone(), pl.1.clone()));
             }
         }
     }
 
+
+    println!("label set in main:");
+    for l in &label_set {
+        println!("{:?}", l);
+    }
     bc.set_label_set(label_set);
 
     //let path_labels = &labels[0].labels;
