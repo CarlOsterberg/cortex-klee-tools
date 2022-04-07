@@ -574,10 +574,12 @@ impl BlockCalculator {
                                 }
                             }
                             let mut label = "".to_string();
+                            println!("looking for another label:");
                             while self.block_stack.len() > 0 {
                                 let label_tuple = self.block_stack.pop().unwrap();
-                                if available_labels.contains(&label_tuple.1) {
+                                if available_labels.contains(&label_tuple.1) && label_tuple.0 == current_block.function{
                                     label = label_tuple.1.clone();
+                                    println!("{:?}", label_tuple);
                                     self.block_stack.push(label_tuple); //push it back for use later
                                     break;
                                 }
@@ -592,7 +594,6 @@ impl BlockCalculator {
                             }
         
                             for p in &second.1 {
-
                                 if p.label == label{
                                     second_contains = true;
                                     second_key = p.key;
@@ -623,6 +624,23 @@ impl BlockCalculator {
                                 continue;
                             }
 
+                            else {
+                                let first_path_to_return = self.unconditional_path_to_return(&current_block.successors[0], 0);
+                                let second_path_to_return = self.unconditional_path_to_return(&current_block.successors[1], 0);
+                                println!("{:?}", first_path_to_return);
+                                println!("{:?}", second_path_to_return);
+                                assert!(!(first_path_to_return.0 && second_path_to_return.0));
+                                if first_path_to_return.0 {
+                                    self.cycles += first_path_to_return.1;
+                                    return;
+                                }
+                                if second_path_to_return.0 {
+                                    self.cycles += second_path_to_return.1;
+                                    return;
+                                }
+                                panic!("could not return");
+                            }
+
                         }
                         return;
                     }
@@ -647,7 +665,7 @@ impl BlockCalculator {
                                 let x = file_content_read_res.unwrap();
                                 self.build_map_first_pass(&x);
                                 self.build_map_second_pass(&x);
-                                //self.print_maps();
+                                self.print_maps();
                                 return;
                             }
                         }
@@ -702,6 +720,37 @@ impl BlockCalculator {
 
     }
 
+    pub fn unconditional_path_to_return(&self, key: &(i32, i32), prev_cycles: u64) -> (bool, u64) {
+        let mut current_key = key;
+        let mut current_cycles = prev_cycles;
+        let mut current_block = self.block_map.get(key).unwrap();
+
+        if current_block.successors.len() == 0 {
+            return (true, prev_cycles + current_block.cycles);
+        }
+
+        else if current_block.successors.len() > 1 {
+            return (false, 0);
+        }
+
+        while current_block.successors.len() == 1 {
+            println!("once");
+            current_key = &current_block.successors[0];
+            current_block = self.block_map.get(current_key).unwrap();
+            current_cycles += current_block.cycles;
+        }
+
+        current_block = self.block_map.get(current_key).unwrap();
+        current_cycles += current_block.cycles;
+
+        if current_block.successors.len() == 0 {
+            return (true, current_cycles);
+        }
+
+        return (false, 0);
+    }
+
+
     pub fn assert_analyzable_block_structure(&mut self) {
         let mut ok_count = 0;
         let mut fail_count = 0;
@@ -754,7 +803,7 @@ impl BlockCalculator {
 
     pub fn print_maps(&mut self){
         for (key, value) in &self.block_map {
-            println!("map key is ({}, {})", key.0, key.1);
+            println!("--map key is ({}, {})", key.0, key.1);
             println!("{}", value.llvmir_label);
             println!("direct label: {}", value.direct_label);
             if value.successors.len() > 0 {

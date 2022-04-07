@@ -199,7 +199,7 @@ impl Labeler {
 
     pub fn print_map(&mut self){
         for (key, value) in &self.label_map {
-            println!("map key is ({}, {})", key.0, key.1);
+            println!("--map key is ({}, {})", key.0, key.1);
             println!("value is {}", value);
         }
     }
