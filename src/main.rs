@@ -312,6 +312,10 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
         println!("file: {}", l.file_name);
         println!("Estimated cycles: {}", bc.cycles);
         println!("paths run: {}", label_file_count);
+
+        let split: Vec<&str> = l.file_name.split(".").collect();
+        let cycle_file_name = format!("{}.cycles", split[0]);
+        fs::write(path.join(cycle_file_name), format!("Calculated cycles (bc): {}\n", bc.cycles)).expect("could not save cycles to file");
     }
 }
 
