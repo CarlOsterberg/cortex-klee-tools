@@ -510,16 +510,24 @@ impl BlockCalculator {
                         println!("attempting to return");
                         let first_path_to_return = self.unconditional_path_to_return(&current_block.successors[0], 0);
                         let second_path_to_return = self.unconditional_path_to_return(&current_block.successors[1], 0);
-                        assert!(!(first_path_to_return.0 && second_path_to_return.0));
+                        if first_path_to_return.0 && second_path_to_return.0 {
+                            println!("two paths return, selecting the longer one");
+                            if first_path_to_return.1 > second_path_to_return.1 {
+                                key = current_block.successors[0];
+                            }
+                            else {
+                                key = current_block.successors[1];
+                            }
+                            println!("branching to {:?}", key);
+                            break;
+                        }
                         if first_path_to_return.0 {
-                            self.cycles += first_path_to_return.1;
-                            println!("returning");
-                            return;
+                            key = current_block.successors[0];
+                            break;
                         }
                         if second_path_to_return.0 {
-                            self.cycles += second_path_to_return.1;
-                            println!("returning");
-                            return;
+                            key = current_block.successors[1];
+                            break;
                         }
                         panic!("could not return");
                     }
@@ -528,7 +536,17 @@ impl BlockCalculator {
                         println!("attempting to find {:?}", next_tuple);
                         let first_path_to_label = self.unconditional_path_to_label(&current_block.successors[0], next_tuple.1.clone());
                         let second_path_to_label = self.unconditional_path_to_label(&current_block.successors[1], next_tuple.1.clone());
-                        assert!(!(first_path_to_label.0 && second_path_to_label.0));
+                        if first_path_to_label.0 && second_path_to_label.0 {
+                            println!("two paths to the target label, selecting the longer one");
+                            if first_path_to_label.1 > second_path_to_label.1 {
+                                key = current_block.successors[0];
+                            }
+                            else {
+                                key = current_block.successors[1];
+                            }
+                            println!("branching to {:?}", key);
+                            break;
+                        }
                         if first_path_to_label.0 {
                             key = current_block.successors[0];
                             println!("found {:?}, branching there", next_tuple);
