@@ -25,7 +25,7 @@ pub struct BlockCalculator {
     conditional_branch_instructions: HashSet<String>,
     unconditional_branch_instructions: HashSet<String>,
     other_branch_instructions: HashSet<String>,
-    block_stack: Vec<(String, String)>,
+    block_stack: Vec<(String, String, bool)>,
     pub cycles: u64,
     string_to_cycles: StringToCortexM4,
     ir_label_set: HashSet<(String, String)>,
@@ -389,7 +389,7 @@ impl BlockCalculator {
 
 
     //Finds the main routine and starts following the control flow
-    pub fn solve_control_flow(&mut self, stack: Vec<(String, String)>) {
+    pub fn solve_control_flow(&mut self, stack: Vec<(String, String, bool)>) {
         self.cycles = 0;
         println!("----------------Starting new path--------------------------");
         self.block_stack = stack;
@@ -425,15 +425,22 @@ impl BlockCalculator {
             }
             else if current_block.successors.len() > 2 {
                 println!("performing table branch in: {} in function {} (tuple: {:?})", current_block.llvmir_label, current_block.function, key);
-                while *self.block_stack.last().unwrap() != (current_block.function.clone(), current_block.llvmir_label.clone()){
+                //pop stack until we find the current block
+                while !(*self.block_stack.last().unwrap().0 == current_block.function.clone() &&
+                        *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone()){
                     println!("{:?}", self.block_stack.pop());
                     //self.block_stack.pop();
                 }
                 //pop all the calls and find the next block
-                while *self.block_stack.last().unwrap() == (current_block.function.clone(), current_block.llvmir_label.clone()){
+                while *self.block_stack.last().unwrap().0 == current_block.function.clone() &&
+                        *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone() &&
+                        self.block_stack.last().unwrap().2{
                     println!("{:?}", self.block_stack.pop());
                     //self.block_stack.pop();
                 }
+
+                //pop once to find the next block
+                println!("{:?}", self.block_stack.pop());
 
                 let next_tuple = &self.block_stack[self.block_stack.len() - 1];
                 println!("target tuple: {:?}", next_tuple);
@@ -460,16 +467,21 @@ impl BlockCalculator {
                 assert!(current_block.successors.len() <= 2);
                 println!("performing conditional branch in: {} in function {} (tuple: {:?})", current_block.llvmir_label, current_block.function, key);
                 //Pop the block stack until we find the current block
-                while *self.block_stack.last().unwrap() != (current_block.function.clone(), current_block.llvmir_label.clone()){
+                while !(*self.block_stack.last().unwrap().0 == current_block.function.clone() &&
+                        *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone()){
                     println!("{:?}", self.block_stack.pop());
                     //self.block_stack.pop();
                 }
-                
                 //pop all the calls and find the next block
-                while *self.block_stack.last().unwrap() == (current_block.function.clone(), current_block.llvmir_label.clone()){
+                while *self.block_stack.last().unwrap().0 == current_block.function.clone() &&
+                        *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone() &&
+                        self.block_stack.last().unwrap().2{
                     println!("{:?}", self.block_stack.pop());
                     //self.block_stack.pop();
                 }
+
+                //pop once to find the next block
+                println!("{:?}", self.block_stack.pop());
 
                 let mut next_tuple = &self.block_stack[self.block_stack.len() - 1];
                 println!("target tuple: {:?}", next_tuple);
@@ -532,7 +544,7 @@ impl BlockCalculator {
                         panic!("could not return");
                     }
 
-                    if self.asm_label_set.contains(&next_tuple) {
+                    if self.asm_label_set.contains(&(next_tuple.0.clone(), next_tuple.1.clone())) {
                         println!("attempting to find {:?}", next_tuple);
                         let first_path_to_label = self.unconditional_path_to_label(&current_block.successors[0], next_tuple.1.clone());
                         let second_path_to_label = self.unconditional_path_to_label(&current_block.successors[1], next_tuple.1.clone());

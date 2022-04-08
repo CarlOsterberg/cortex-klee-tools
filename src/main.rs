@@ -289,17 +289,17 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
                 //if labeler has replaced the number with a new label, push that instead
                 if labeler.label_map.contains_key(&(label_number.clone().unwrap().to_string(), *fn_nr)) {
                     let block_name = labeler.label_map.get(&(label_number.unwrap().to_string(), *fn_nr)).unwrap().to_string();
-                    path_labels_renamed.push((fn_name, block_name.clone()));
+                    path_labels_renamed.push((fn_name, block_name.clone(), pl.2));
                     continue;
                 }
                 //A number name which has not been replaced has to be the initial block
                 else {
-                    path_labels_renamed.push((fn_name, "initial_fn_block".to_string()));
+                    path_labels_renamed.push((fn_name, "initial_fn_block".to_string(), pl.2));
                 }
             }
             //Label already had a name before the labeling tool
             else {
-                path_labels_renamed.push((fn_name, pl.1));
+                path_labels_renamed.push((fn_name, pl.1, pl.2));
             }
         }
 
