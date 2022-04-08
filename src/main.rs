@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::{env, path::PathBuf, process::Command, fs};
 use clap::Arg;
 use clap::Command as App;
@@ -38,7 +39,7 @@ fn main() {
             Arg::new("optimize")
                 .long("optimize")
                 .short('o')
-                .help("Analyze optimized IR and assembly"),
+                .help("Analyze optimized IR and assembly (Always true for rust)"),
         )
         .arg(
             Arg::new("only-output-states-covering-new")
@@ -60,7 +61,7 @@ fn main() {
     }
     else if is_rust_program {
         println!("Analyzing rust program: {}", matches.value_of("rust").unwrap());
-        analyze_rust_program(matches.value_of("rust").unwrap().to_string(), optimize, new);
+        analyze_rust_program(matches.value_of("rust").unwrap().to_string(), true, new);
     }
   
     /*let mut dir2 = env::current_dir().unwrap();
@@ -86,6 +87,11 @@ fn analyze_rust_program(bin_name: String, opt: bool, new: bool) {
         println!("Could not find Cargo.toml file in current directory");
         return;
     }
+
+    let config_file_path = dir.join(".cargo").join("config");
+    fs::write(&config_file_path, format!("{}\n{}", "[build]", r#"target = "thumbv7em-none-eabihf""#)).expect("Could not write to config file");
+
+
     let mut cargo_klee = Command::new("cargo");
     cargo_klee.arg("klee");
 
@@ -103,33 +109,17 @@ fn analyze_rust_program(bin_name: String, opt: bool, new: bool) {
         .expect("Could not create directory .cargo");
     }
 
-    let config_file_path = dir.join(".cargo").join("config");
-    fs::write(&config_file_path, format!("{}\n{}", "[build]", r#"target = "thumbv7em-none-eabihf""#)).expect("Could not write to config file");
-
-    let mut cargo = Command::new("cargo");
-    cargo.arg("rustc");
-    cargo.args(["--bin", &bin_name]);
-
-    if opt {
-        cargo.arg("--release");
-    }
-
-    cargo.args(["--features", "klee-analysis", "-v", "--color=always", "--", "-C", "linker=true", "-C", "lto", "--emit=llvm-ir"]);
-
-    cargo.status().expect("Could not run cargo rustc");
-
-    fs::write(&config_file_path, "").expect("Could not clear config file");
-
     let path_to_label_files;
     let path_to_ll_file;
+    let ll_file_name = "assembly.ll".to_string();
 
     if opt {
-        path_to_label_files = dir.join("target/release/deps/klee-last");
-        path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/release/deps");
+        path_to_label_files = dir.join("target/thumbv7em-none-eabihf/release/deps/klee-last");
+        path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/release/deps/klee-last");
     }
     else {
-        path_to_label_files = dir.join("target/debug/deps/klee-last");
-        path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/debug/deps");
+        path_to_label_files = dir.join("target/thumbv7em-none-eabihf/debug/deps/klee-last");
+        path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/debug/deps/klee-last");
     }
     
     let mut ll_file_name = "".to_string();
@@ -222,6 +212,49 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
 
     //labeler.print_map();
 
+    let mut label_set = HashSet::new();
+
+    for l in &labels {
+        let path_labels = &l.labels;
+        for pl in path_labels {
+            let fn_name;
+            let rust_mangle_split: Vec<&str> = pl.0.split("17h").collect();
+            if rust_mangle_split.len() == 2 {
+                fn_name = rust_mangle_split[0].to_string();
+            }
+            else {
+                fn_name = pl.0.clone();
+            }
+            
+            let fn_nr = bc.fn_map.get(&fn_name).unwrap();
+            let percent_removed = &pl.1[1..pl.1.len()];
+            let label_number = percent_removed.parse::<u32>();
+            if label_number.is_ok() {
+                //if labeler has replaced the number with a new label, push that instead
+                if labeler.label_map.contains_key(&(label_number.clone().unwrap().to_string(), *fn_nr)) {
+                    let block_name = labeler.label_map.get(&(label_number.unwrap().to_string(), *fn_nr)).unwrap().to_string();
+                    label_set.insert((fn_name.clone(), block_name.clone()));
+                    continue;
+                }
+                //A number name which has not been replaced has to be the initial block
+                else {
+                    label_set.insert((fn_name.clone(), "initial_fn_block".to_string()));
+                }
+            }
+            //Label already had a name before the labeling tool
+            else {
+                label_set.insert((fn_name.clone(), pl.1.clone()));
+            }
+        }
+    }
+
+
+    println!("label set in main:");
+    for l in &label_set {
+        println!("{:?}", l);
+    }
+    bc.set_label_set(label_set);
+
     //let path_labels = &labels[0].labels;
     let mut label_file_count = 0;
     println!("paths to analyze: {}", labels.len());
@@ -233,7 +266,11 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
         }
         label_file_count += 1;
         let mut path_labels_renamed = Vec::new();
+
+        println!("running {}", l.file_name);
+
         for pl in path_labels {
+
             let fn_name;
             let rust_mangle_split: Vec<&str> = pl.0.split("17h").collect();
             if rust_mangle_split.len() == 2 {
@@ -250,17 +287,17 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
                 //if labeler has replaced the number with a new label, push that instead
                 if labeler.label_map.contains_key(&(label_number.clone().unwrap().to_string(), *fn_nr)) {
                     let block_name = labeler.label_map.get(&(label_number.unwrap().to_string(), *fn_nr)).unwrap().to_string();
-                    path_labels_renamed.push((fn_name, block_name.clone()));
+                    path_labels_renamed.push((fn_name, block_name.clone(), pl.2));
                     continue;
                 }
                 //A number name which has not been replaced has to be the initial block
                 else {
-                    path_labels_renamed.push((fn_name, "initial_fn_block".to_string()));
+                    path_labels_renamed.push((fn_name, "initial_fn_block".to_string(), pl.2));
                 }
             }
             //Label already had a name before the labeling tool
             else {
-                path_labels_renamed.push((fn_name, pl.1));
+                path_labels_renamed.push((fn_name, pl.1, pl.2));
             }
         }
 

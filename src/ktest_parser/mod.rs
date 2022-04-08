@@ -29,7 +29,7 @@ pub struct Instructions {
 #[allow(dead_code)]
 pub struct Labels {
     pub file_name: String,
-    pub labels: Vec<(String, String)>
+    pub labels: Vec<(String, String, bool)>
 }
 
 #[allow(dead_code)]
@@ -194,7 +194,12 @@ impl Labels {
         let labels_str: Vec<&str> = file_contents.split(" ").collect();
         for l in labels_str {
             let split: Vec<&str> = l.split("|").collect();
-            labels.push((split[1].to_string(), split[0].to_string()))
+            if split.len() == 3 {
+                labels.push((split[2].to_string(), split[1].to_string(), true))
+            }
+            else {
+                labels.push((split[1].to_string(), split[0].to_string(), false))
+            }
         }
         Ok(
             Labels {
