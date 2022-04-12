@@ -571,7 +571,7 @@ impl BlockCalculator {
                             key = current_block.successors[1];
                             break;
                         }
-                        self.print_if_verbose("could not return".to_string());
+                        panic!("could not return");
                     }
 
                     if self.asm_label_set.contains(&(next_tuple.0.clone(), next_tuple.1.clone())) {
@@ -599,7 +599,7 @@ impl BlockCalculator {
                             self.print_if_verbose(format!("found {:?}, branching there", next_tuple));
                             break;
                         }
-                        self.print_if_verbose("could not find path to label".to_string());
+                        panic!("could not find path to label");
                     }
                     //pop once to find the next block
                     self.block_stack.pop();
