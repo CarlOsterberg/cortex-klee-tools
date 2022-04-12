@@ -2,8 +2,10 @@ use regex::Regex;
 use std::{fs, cmp};
 use std::path::PathBuf;
 use std::collections::{HashMap, HashSet};
+use rustc_demangle::demangle;
 
 use crate::llvmir_to_m4_cycles::cortex_m4::StringToCortexM4;
+use crate::settings::Settings;
 
 #[allow(dead_code)]
 pub struct Block {
@@ -30,6 +32,7 @@ pub struct BlockCalculator {
     string_to_cycles: StringToCortexM4,
     ir_label_set: HashSet<(String, String)>,
     asm_label_set: HashSet<(String, String)>,
+    settings: Settings,
 }
 
 pub struct Path{
@@ -82,7 +85,7 @@ pub fn init_other_branch_instructions() -> HashSet<String> {
 #[allow(dead_code)]
 impl BlockCalculator {
 
-    pub fn new() -> BlockCalculator {
+    pub fn new(settings: Settings) -> BlockCalculator {
         BlockCalculator {
             block_map: HashMap::new(),
             fn_map: HashMap::new(),
@@ -94,6 +97,7 @@ impl BlockCalculator {
             string_to_cycles: StringToCortexM4::new(),
             ir_label_set: HashSet::new(),
             asm_label_set: HashSet::new(),
+            settings: settings,
         }
 
     }
@@ -123,13 +127,10 @@ impl BlockCalculator {
                 let mut fn_name = "".to_string();
                 for cap in asm_fn_def.captures_iter(row){
                     fn_name = format!("{}{}", cap[1].to_string().clone(), cap[2].to_string().clone());
-                    //rust name manglng, the name seems to be the same before the 17h
-                    //this means the original program cant have multiple functions with a name containing
-                    //17h if the name is the same before the 17h. 
-                    let rust_mangle_split: Vec<&str> = fn_name.split("17h").collect();
-                    if rust_mangle_split.len() == 2 {
-                        fn_name = rust_mangle_split[0].to_string();
-                    }
+                    if self.settings.rust {
+                        //demangle and remove hash
+                        fn_name = format!("{:#}", demangle(&fn_name));
+                    } 
                     break;
                 }
                 current_fn = fn_name;
@@ -320,12 +321,9 @@ impl BlockCalculator {
                                     unconditional_block = true;
                                 }
                                 let mut callee_name = split[1].to_string();
-                                //rust name manglng, the name seems to be the same before the 17h
-                                //this means the original program cant have multiple functions with a name containing
-                                //17h if the name is the same before the 17h. 
-                                let rust_mangle_split: Vec<&str> = callee_name.split("17h").collect();
-                                if rust_mangle_split.len() == 2 {
-                                    callee_name = rust_mangle_split[0].to_string();
+                                if self.settings.rust {
+                                    //demangle and remove hash
+                                    callee_name = format!("{:#}", demangle(&callee_name));
                                 }
                                 let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
                                 old_block.calls.push(callee_name);
@@ -391,18 +389,20 @@ impl BlockCalculator {
     //Finds the main routine and starts following the control flow
     pub fn solve_control_flow(&mut self, stack: Vec<(String, String, bool)>) {
         self.cycles = 0;
-        println!("----------------Starting new path--------------------------");
+        println!("----------------Starting new path----------------");
         self.block_stack = stack;
+        let x  = self.block_stack.len() as u64;
         let main_number = self.fn_map.get(&"main".to_string()).unwrap().clone();
         self.solve_fn_control_flow((main_number,0));
-        println!("finished solving control flow");
+        println!("block_stack_size: before: {} after: {}", x, self.block_stack.len());
+        println!("cycle/block ratio * 100: {}", (x*100)/self.cycles);
     } 
 
     //Tries to refollow the control flow as specified by the block stack
     fn solve_fn_control_flow(&mut self, fn_key: (i32, i32)) {
         let mut key = fn_key;
         loop {
-            println!("currently in block: {:?}", key);
+            self.print_if_verbose(format!("currently in block: {:?}", key));
             let mut current_block = self.block_map.get(&key).unwrap();
             self.cycles += current_block.cycles;
             for c in current_block.calls.clone() {
@@ -410,7 +410,7 @@ impl BlockCalculator {
                     continue;
                 }*/
                 if !self.fn_map.contains_key(&c) {
-                    println!("################ Skipping unknown call: {} ################",c);
+                    self.print_if_verbose(format!("################ Skipping unknown call: {} ################",c));
                     continue;
                 }
                 let fn_nr = self.fn_map.get(&c).unwrap().clone();
@@ -424,23 +424,37 @@ impl BlockCalculator {
                 key = current_block.successors[0];
             }
             else if current_block.successors.len() > 2 {
-                println!("performing table branch in: {} in function {} (tuple: {:?})", current_block.llvmir_label, current_block.function, key);
+                self.print_if_verbose(format!("performing table branch in: {} in function {} (tuple: {:?})", 
+                    current_block.llvmir_label, current_block.function, key));
                 //pop stack until we find the current block
                 while !(*self.block_stack.last().unwrap().0 == current_block.function.clone() &&
                         *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone()){
-                    println!("{:?}", self.block_stack.pop());
-                    //self.block_stack.pop();
+                    if self.settings.verbose {
+                        println!("{:?}", self.block_stack.pop());
+                    }
+                    else {
+                        self.block_stack.pop();
+                    }
                 }
                 //pop all the calls and find the next block
                 while *self.block_stack.last().unwrap().0 == current_block.function.clone() &&
                         *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone() &&
                         self.block_stack.last().unwrap().2{
-                    println!("{:?}", self.block_stack.pop());
-                    //self.block_stack.pop();
+                    if self.settings.verbose {
+                        println!("{:?}", self.block_stack.pop());
+                    }
+                    else {
+                        self.block_stack.pop();
+                    }
                 }
 
                 //pop once to find the next block
-                println!("{:?}", self.block_stack.pop());
+                if self.settings.verbose {
+                    println!("{:?}", self.block_stack.pop());
+                }
+                else {
+                    self.block_stack.pop();
+                }
 
                 let next_tuple = &self.block_stack[self.block_stack.len() - 1];
                 println!("target tuple: {:?}", next_tuple);
@@ -465,26 +479,40 @@ impl BlockCalculator {
             }
             else {
                 assert!(current_block.successors.len() <= 2);
-                println!("performing conditional branch in: {} in function {} (tuple: {:?})", current_block.llvmir_label, current_block.function, key);
+                self.print_if_verbose(format!("performing conditional branch in: {} in function {} (tuple: {:?})", 
+                    current_block.llvmir_label, current_block.function, key));
                 //Pop the block stack until we find the current block
                 while !(*self.block_stack.last().unwrap().0 == current_block.function.clone() &&
                         *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone()){
-                    println!("{:?}", self.block_stack.pop());
-                    //self.block_stack.pop();
+                    if self.settings.verbose {
+                        println!("{:?}", self.block_stack.pop());
+                    }
+                    else {
+                        self.block_stack.pop();
+                    }
                 }
                 //pop all the calls and find the next block
                 while *self.block_stack.last().unwrap().0 == current_block.function.clone() &&
                         *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone() &&
                         self.block_stack.last().unwrap().2{
-                    println!("{:?}", self.block_stack.pop());
-                    //self.block_stack.pop();
+                    if self.settings.verbose {
+                        println!("{:?}", self.block_stack.pop());
+                    }
+                    else {
+                        self.block_stack.pop();
+                    }
                 }
 
                 //pop once to find the next block
-                println!("{:?}", self.block_stack.pop());
+                if self.settings.verbose {
+                    println!("{:?}", self.block_stack.pop());
+                }
+                else {
+                    self.block_stack.pop();
+                }
 
                 let mut next_tuple = &self.block_stack[self.block_stack.len() - 1];
-                println!("target tuple: {:?}", next_tuple);
+                self.print_if_verbose(format!("target tuple: {:?}", next_tuple));
                 let mut succ_found = false;
                 for s in &current_block.successors {
                     let b = self.block_map.get(s).unwrap();
@@ -497,7 +525,7 @@ impl BlockCalculator {
                     if b.function == next_tuple.0 && //function name has to be the same
                     ((b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1 && !self.ir_label_set.contains(&(b.function.clone(), b.llvmir_label.clone())))
                         || b.llvmir_label == next_tuple.1){
-                        println!("found ({}, {}), branching there", b.function, b.llvmir_label);
+                        self.print_if_verbose(format!("found ({}, {}), branching there", b.function, b.llvmir_label));
                         succ_found = true;
                         key = *s;
                         break;
@@ -513,24 +541,25 @@ impl BlockCalculator {
                 if current_block.conditional_return {
                     return;
                 }
-                println!("Could not find succcessor after block: {}", current_block.llvmir_label);
+
+                self.print_if_verbose(format!("Could not find succcessor after block: {}", current_block.llvmir_label));
 
                 
                 loop {
                     //We should try to return
                     if next_tuple.0 != current_block.function {
-                        println!("attempting to return");
+                        self.print_if_verbose("attempting to return".to_string());
                         let first_path_to_return = self.unconditional_path_to_return(&current_block.successors[0], 0);
                         let second_path_to_return = self.unconditional_path_to_return(&current_block.successors[1], 0);
                         if first_path_to_return.0 && second_path_to_return.0 {
-                            println!("two paths return, selecting the longer one");
+                            self.print_if_verbose("two paths return, selecting the longer one".to_string());
                             if first_path_to_return.1 > second_path_to_return.1 {
                                 key = current_block.successors[0];
                             }
                             else {
                                 key = current_block.successors[1];
                             }
-                            println!("branching to {:?}", key);
+                            self.print_if_verbose(format!("branching to {:?}", key));
                             break;
                         }
                         if first_path_to_return.0 {
@@ -541,35 +570,35 @@ impl BlockCalculator {
                             key = current_block.successors[1];
                             break;
                         }
-                        panic!("could not return");
+                        self.print_if_verbose("could not return".to_string());
                     }
 
                     if self.asm_label_set.contains(&(next_tuple.0.clone(), next_tuple.1.clone())) {
-                        println!("attempting to find {:?}", next_tuple);
+                        self.print_if_verbose(format!("attempting to find {:?}", next_tuple));
                         let first_path_to_label = self.unconditional_path_to_label(&current_block.successors[0], next_tuple.1.clone());
                         let second_path_to_label = self.unconditional_path_to_label(&current_block.successors[1], next_tuple.1.clone());
                         if first_path_to_label.0 && second_path_to_label.0 {
-                            println!("two paths to the target label, selecting the longer one");
+                            self.print_if_verbose("two paths to the target label, selecting the longer one".to_string());
                             if first_path_to_label.1 > second_path_to_label.1 {
                                 key = current_block.successors[0];
                             }
                             else {
                                 key = current_block.successors[1];
                             }
-                            println!("branching to {:?}", key);
+                            self.print_if_verbose(format!("branching to {:?}", key));
                             break;
                         }
                         if first_path_to_label.0 {
                             key = current_block.successors[0];
-                            println!("found {:?}, branching there", next_tuple);
+                            self.print_if_verbose(format!("found {:?}, branching there", next_tuple));
                             break;
                         }
                         if second_path_to_label.0 {
                             key = current_block.successors[1];
-                            println!("found {:?}, branching there", next_tuple);
+                            self.print_if_verbose(format!("found {:?}, branching there", next_tuple));
                             break;
                         }
-                        panic!("could not find path to label");
+                        self.print_if_verbose("could not find path to label".to_string());
                     }
                     //pop once to find the next block
                     self.block_stack.pop();
@@ -706,6 +735,12 @@ impl BlockCalculator {
         return (false, 0);
     }
 
+
+    fn print_if_verbose(&self, output: String) {
+        if self.settings.verbose {
+            println!("{}", output);
+        }
+    }
 
     pub fn assert_analyzable_block_structure(&mut self) {
         let mut ok_count = 0;
