@@ -1,8 +1,12 @@
+use std::cmp::Ordering;
 use std::collections::HashSet;
+use std::fs::File;
+use std::io::Write;
+use std::vec;
 use std::{env, path::PathBuf, process::Command, fs};
 use clap::Arg;
 use clap::Command as App;
-use llvmir_to_m4_cycles::cortex_m4;
+use llvmir_to_m4_cycles::{cortex_m4, IrToM4};
 use regex::Regex;
 
 //use llvmir_to_m4_cycles::IrToM4;
@@ -199,7 +203,7 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
 
 
     let path_clone = path.clone();
-    Command::new("llc")
+    Command::new("llc-13")
         .args(["-mtriple=arm-none-eabihf","-mattr=armv7e-m","-mcpu=cortex-m4", path_clone.join(labeled_file_name).to_str().unwrap()])
         .status()
         .expect("Failed to compile labeled IR file.");
@@ -320,8 +324,12 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
 }
 
 fn run_ir_to_cycles(ktest_location: PathBuf) {
-    match llvmir_to_m4_cycles::IrToM4::read_dir(ktest_location) {
-        Ok(ktests) => {
+    match llvmir_to_m4_cycles::IrToM4::read_dir(ktest_location.clone()) {
+        Ok(mut ktests) => {
+            let mut filename = ktest_location.clone();
+            filename.push("IrToCycles.result");
+            let mut result_file = File::create(filename).expect("Could'nt create output file for LLVM IR to cycles calculation");
+            ktests.sort_by(|a, b| ktest_ord(a,b));
             for ktest in ktests {
                 let (name,ir_to_m4_vec) = ktest;
                 let mut sum_upper = 0;
@@ -330,9 +338,53 @@ fn run_ir_to_cycles(ktest_location: PathBuf) {
                     sum_upper += ir_to_m4.clone().get_upper(3, 1, 1);
                     sum_lower += ir_to_m4.get_lower(0,1,1);
                 }
-                println!("{:?} lower: {:?}, upper: {:?}",name,sum_lower,sum_upper);
+                let s = format!("{:?} lower: {:?}, upper: {:?}\n",name,sum_lower,sum_upper);
+                result_file.write_all(s.as_bytes()).unwrap();
+                print!("{}", s);
+
             }
         },
         Err(msg) => println!("{}", msg),
     }
+}
+
+fn ktest_ord(t: &(String, Vec<IrToM4>), e: &(String, Vec<IrToM4>)) -> Ordering {
+    let t_num = get_ktest_num(t.clone()).unwrap();
+    let e_num = get_ktest_num(e.clone()).unwrap();
+    if t_num > e_num {
+        Ordering::Greater
+    }
+    else if t_num < e_num {
+        Ordering::Less
+    }
+    else {
+        Ordering::Equal
+    }
+}
+
+fn get_ktest_num(ktest: (String, Vec<IrToM4>)) -> Option<u32> {
+    let validator = Regex::new("test0*[0-9]+[.]instructions").unwrap();
+    if validator.is_match(&ktest.0) {
+        let s = ktest.0.clone();
+        let prefix = s.split(".").into_iter().next()?;
+        let num_w_pad = &prefix[4..];
+        let num_string = remove_zero_padding(num_w_pad);
+        let num = num_string.parse::<u32>().unwrap();
+        Some(num)
+    }
+    else {
+        None
+    }
+}
+
+fn remove_zero_padding(s:&str) -> String {
+    let chars = s.chars();
+    let mut result = "".to_string();
+    for char in chars {
+        if char == '0' && result == "" {
+            continue;
+        }
+        result += &std::string::String::from(char);
+    }
+    result
 }

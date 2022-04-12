@@ -28,6 +28,11 @@ impl IrToM4 {
                 cortex_wc: vec![CortexM4::B],
                 cortex_bc: vec![CortexM4::B]
             },
+            Some(LlvmIr::BrIl) => IrToM4 {
+                llvm_ir: LlvmIr::BrIl,
+                cortex_wc: vec![CortexM4::Bcc],
+                cortex_bc: vec![CortexM4::Bcc]
+            },
             Some(LlvmIr::IndirectBr) => IrToM4 {
                 llvm_ir: LlvmIr::IndirectBr,
                 cortex_wc: vec![CortexM4::B],
@@ -49,8 +54,8 @@ impl IrToM4 {
             //check this more thoroughly
             Some(LlvmIr::PHI)  => IrToM4 {
                 llvm_ir: LlvmIr::PHI,
-                cortex_wc: vec![CortexM4::B],
-                cortex_bc: vec![CortexM4::B],
+                cortex_wc: vec![],
+                cortex_bc: vec![],
             },
             //check this more thoroughly
             Some(LlvmIr::Select)  => IrToM4 {

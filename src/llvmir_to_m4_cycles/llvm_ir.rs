@@ -3,6 +3,7 @@
 pub enum LlvmIr {
     Ret,
     Br,
+    BrIl,
     IndirectBr,
     Switch,
     _Unreachable,//dunno
@@ -64,6 +65,7 @@ impl LlvmIr {
         match s {
             "Ret" => Some(LlvmIr::Ret),
             "Br" => Some(LlvmIr::Br),
+            "Br il" => Some(LlvmIr::BrIl),
             "IndirectBr" => Some(LlvmIr::IndirectBr),
             "Swith" => Some(LlvmIr::Switch),
             "Call" => Some(LlvmIr::Call),
