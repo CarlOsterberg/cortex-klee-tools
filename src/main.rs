@@ -2,7 +2,6 @@ use std::collections::HashSet;
 use std::{env, path::PathBuf, process::Command, fs};
 use clap::Arg;
 use clap::Command as App;
-use llvmir_to_m4_cycles::cortex_m4;
 use regex::Regex;
 use rustc_demangle::demangle;
 
@@ -92,8 +91,8 @@ fn main() {
 }
 
 
-fn analyze_rust_program(bin_name: String, opt: bool, new: bool, verbose: bool) {
-    let mut dir = env::current_dir().unwrap();
+fn analyze_rust_program(bin_name: String, opt: bool, _new: bool, verbose: bool) {
+    let dir = env::current_dir().unwrap();
     if !dir.join("Cargo.toml").exists() {
         println!("Could not find Cargo.toml file in current directory");
         return;
@@ -122,7 +121,6 @@ fn analyze_rust_program(bin_name: String, opt: bool, new: bool, verbose: bool) {
 
     let path_to_label_files;
     let path_to_ll_file;
-    let ll_file_name = "assembly.ll".to_string();
 
     if opt {
         path_to_label_files = dir.join("target/thumbv7em-none-eabihf/release/deps/klee-last");
@@ -183,12 +181,14 @@ fn analyze_c_program(file_name: String, opt: bool, new: bool, verbose: bool) {
     run_labeler_and_bc(&dir, "assembly.ll".to_string(), &dir, settings)
 }
 
+#[allow(dead_code)]
 fn check_block_structure(path: &PathBuf, file_name: String, settings: Settings) {
     let mut bc = block_calculator::BlockCalculator::new(settings);
     bc.analyze_file_block_structure(path, &file_name);
     bc.assert_analyzable_block_structure();
 }
 
+#[allow(dead_code)]
 fn run_labeler(path: &PathBuf, file_name: String) {
     //Run the labeling tool
     let mut labeler = llvmir_labeler::Labeler::new();

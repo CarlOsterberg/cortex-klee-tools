@@ -1,5 +1,5 @@
 use regex::Regex;
-use std::{fs, cmp};
+use std::fs;
 use std::path::PathBuf;
 use std::collections::{HashMap, HashSet};
 use rustc_demangle::demangle;
@@ -35,6 +35,7 @@ pub struct BlockCalculator {
     settings: Settings,
 }
 
+#[allow(dead_code)]
 pub struct Path{
     label: String,
     cycles: u64,
