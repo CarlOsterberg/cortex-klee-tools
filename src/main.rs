@@ -2,12 +2,14 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::Write;
-use std::vec;
 use std::{env, path::PathBuf, process::Command, fs};
 use clap::Arg;
 use clap::Command as App;
-use llvmir_to_m4_cycles::{cortex_m4, IrToM4};
+use llvmir_to_m4_cycles::{IrToM4};
 use regex::Regex;
+use rustc_demangle::demangle;
+
+use crate::settings::Settings;
 
 //use llvmir_to_m4_cycles::IrToM4;
 mod ktest_parser;
@@ -15,6 +17,7 @@ mod llvmir_to_m4_cycles;
 mod tests;
 mod llvmir_labeler;
 mod block_calculator;
+mod settings;
 
 //https://github.com/klee/klee/blob/master/tools/ktest-tool/ktest-tool
 
@@ -51,21 +54,28 @@ fn main() {
                 .short('n')
                 .help("Only analyze test cases covering new code"),
         )
+        .arg(
+            Arg::new("verbose")
+                .long("verbose")
+                .short('v')
+                .help("Print out debug information"),
+        )
         .get_matches();
 
     let is_c_program = matches.is_present("c");
     let is_rust_program = matches.is_present("rust");
     let optimize = matches.is_present("optimize");
     let new = matches.is_present("only-output-states-covering-new");
+    let verbose = matches.is_present("verbose");
 
     if is_c_program {
         println!("Analyzing c program: {}", matches.value_of("c").unwrap());
-        analyze_c_program(matches.value_of("c").unwrap().to_string(), optimize, new);
+        analyze_c_program(matches.value_of("c").unwrap().to_string(), optimize, new, verbose);
         return;
     }
     else if is_rust_program {
         println!("Analyzing rust program: {}", matches.value_of("rust").unwrap());
-        analyze_rust_program(matches.value_of("rust").unwrap().to_string(), true, new);
+        analyze_rust_program(matches.value_of("rust").unwrap().to_string(), true, new, verbose);
     }
   
     /*let mut dir2 = env::current_dir().unwrap();
@@ -85,8 +95,8 @@ fn main() {
 }
 
 
-fn analyze_rust_program(bin_name: String, opt: bool, new: bool) {
-    let mut dir = env::current_dir().unwrap();
+fn analyze_rust_program(bin_name: String, opt: bool, _new: bool, verbose: bool) {
+    let dir = env::current_dir().unwrap();
     if !dir.join("Cargo.toml").exists() {
         println!("Could not find Cargo.toml file in current directory");
         return;
@@ -115,7 +125,6 @@ fn analyze_rust_program(bin_name: String, opt: bool, new: bool) {
 
     let path_to_label_files;
     let path_to_ll_file;
-    let ll_file_name = "assembly.ll".to_string();
 
     if opt {
         path_to_label_files = dir.join("target/thumbv7em-none-eabihf/release/deps/klee-last");
@@ -140,15 +149,15 @@ fn analyze_rust_program(bin_name: String, opt: bool, new: bool) {
     }
     run_ir_to_cycles(path_to_label_files.clone());
 
-    println!("{}", ll_file_name);
-
     if ll_file_name == "".to_string() {
         panic!("Could not find .ll file.");
     }
-    run_labeler_and_bc(&path_to_ll_file, ll_file_name, &path_to_label_files);
+
+    let settings = Settings::new(true, verbose);
+    run_labeler_and_bc(&path_to_ll_file, ll_file_name, &path_to_label_files, settings);
 }
 
-fn analyze_c_program(file_name: String, opt: bool, new: bool) {
+fn analyze_c_program(file_name: String, opt: bool, new: bool, verbose: bool) {
     //TODO: fix include directory, can only be run in examples directory
     Command::new("clang")
         .args(["-I../../include", "-emit-llvm", "-c", "-g", "-O0", "-Xclang", "-disable-O0-optnone", &file_name])
@@ -172,15 +181,18 @@ fn analyze_c_program(file_name: String, opt: bool, new: bool) {
     let mut dir = env::current_dir().unwrap();
     dir.push("klee-last");
     run_ir_to_cycles(dir.clone());
-    run_labeler_and_bc(&dir, "assembly.ll".to_string(), &dir)
+    let settings = Settings::new(false, verbose);
+    run_labeler_and_bc(&dir, "assembly.ll".to_string(), &dir, settings)
 }
 
-fn check_block_structure(path: &PathBuf, file_name: String) {
-    let mut bc = block_calculator::BlockCalculator::new();
+#[allow(dead_code)]
+fn check_block_structure(path: &PathBuf, file_name: String, settings: Settings) {
+    let mut bc = block_calculator::BlockCalculator::new(settings);
     bc.analyze_file_block_structure(path, &file_name);
     bc.assert_analyzable_block_structure();
 }
 
+#[allow(dead_code)]
 fn run_labeler(path: &PathBuf, file_name: String) {
     //Run the labeling tool
     let mut labeler = llvmir_labeler::Labeler::new();
@@ -188,7 +200,7 @@ fn run_labeler(path: &PathBuf, file_name: String) {
     labeler.save_file(path, &file_name);
 }
 
-fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &PathBuf) {
+fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &PathBuf, settings: Settings) {
     //Run the labeling tool
     let mut labeler = llvmir_labeler::Labeler::new();
     let _replaced_string = labeler.label_file(path, &file_name).unwrap();
@@ -203,7 +215,7 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
 
 
     let path_clone = path.clone();
-    Command::new("llc-13")
+    Command::new("llc")
         .args(["-mtriple=arm-none-eabihf","-mattr=armv7e-m","-mcpu=cortex-m4", path_clone.join(labeled_file_name).to_str().unwrap()])
         .status()
         .expect("Failed to compile labeled IR file.");
@@ -211,7 +223,7 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
     println!("Compiled to assembly.");
 
     //Analyze labeled file with BlockCalculator
-    let mut bc = block_calculator::BlockCalculator::new();
+    let mut bc = block_calculator::BlockCalculator::new(settings.clone());
     bc.analyze_file_block_structure(path, &labeled_asm_file_name);
 
     //labeler.print_map();
@@ -222,9 +234,9 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
         let path_labels = &l.labels;
         for pl in path_labels {
             let fn_name;
-            let rust_mangle_split: Vec<&str> = pl.0.split("17h").collect();
-            if rust_mangle_split.len() == 2 {
-                fn_name = rust_mangle_split[0].to_string();
+            if settings.rust {
+                //Demangle and remove hash
+                fn_name = format!("{:#}", demangle(&pl.0.clone()))
             }
             else {
                 fn_name = pl.0.clone();
@@ -253,10 +265,6 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
     }
 
 
-    println!("label set in main:");
-    for l in &label_set {
-        println!("{:?}", l);
-    }
     bc.set_label_set(label_set);
 
     //let path_labels = &labels[0].labels;
@@ -274,9 +282,8 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
         for pl in path_labels {
 
             let fn_name;
-            let rust_mangle_split: Vec<&str> = pl.0.split("17h").collect();
-            if rust_mangle_split.len() == 2 {
-                fn_name = rust_mangle_split[0].to_string();
+            if settings.rust {
+                fn_name = format!("{:#}", demangle(&pl.0));
             }
             else {
                 fn_name = pl.0;
