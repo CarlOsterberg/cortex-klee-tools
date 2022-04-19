@@ -215,7 +215,7 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
 
 
     let path_clone = path.clone();
-    Command::new("llc")
+    Command::new("llc-13")
         .args(["-mtriple=arm-none-eabihf","-mattr=armv7e-m","-mcpu=cortex-m4", path_clone.join(labeled_file_name).to_str().unwrap()])
         .status()
         .expect("Failed to compile labeled IR file.");
