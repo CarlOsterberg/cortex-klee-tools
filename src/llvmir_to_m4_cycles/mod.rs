@@ -43,12 +43,11 @@ impl IrToM4 {
                 cortex_wc: vec![CortexM4::B],
                 cortex_bc: vec![CortexM4::B],
             },
-            //check this more thoroughly
             Some((LlvmIr::Switch, overwrite_n)) => IrToM4 {
                 overwrite_n,
                 llvm_ir: LlvmIr::Switch,
-                cortex_wc: vec![CortexM4::B],
-                cortex_bc: vec![CortexM4::B],
+                cortex_wc: vec![CortexM4::TBB],
+                cortex_bc: vec![CortexM4::TBB],
             },
             Some((LlvmIr::_Unreachable, _))  => todo!(),
             Some((LlvmIr::_Invoke, _))  => todo!(),
