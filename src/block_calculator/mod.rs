@@ -396,7 +396,7 @@ impl BlockCalculator {
         let main_number = self.fn_map.get(&"main".to_string()).unwrap().clone();
         self.solve_fn_control_flow((main_number,0));
         println!("block_stack_size: before: {} after: {}", x, self.block_stack.len());
-        println!("cycle/block ratio * 100: {}", (x*100)/self.cycles);
+        println!("cycle/'block' ratio * 100: {}", (x*100)/self.cycles);
     } 
 
     //Tries to refollow the control flow as specified by the block stack
@@ -693,7 +693,6 @@ impl BlockCalculator {
         }
 
         while current_block.successors.len() == 1 {
-            println!("once");
             current_key = &current_block.successors[0];
             current_block = self.block_map.get(current_key).unwrap();
             current_cycles += current_block.cycles;
