@@ -119,7 +119,6 @@ pub enum CortexM4 {
 
 #[allow(dead_code)]
 impl CortexM4 {
-
     pub fn get_upper(self, mut b:u32,n:u32,w:u32) -> u32 {
         let p=3;
         if b > p {
@@ -322,7 +321,7 @@ impl CortexM4 {
             CortexM4::CBNZ => 1,
             CortexM4::TBB => 2 + p,
             CortexM4::TBH => 2 + p,
-            CortexM4::IT => 1,
+            CortexM4::IT => 0,
             CortexM4::CPSID => 1,
             CortexM4::CPSIE => 1,
             CortexM4::MRS => 1,

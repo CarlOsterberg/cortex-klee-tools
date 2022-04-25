@@ -9,6 +9,7 @@ use self::{llvm_ir::LlvmIr, cortex_m4::{CortexM4}};
 #[allow(dead_code)]
 #[derive(Clone,Debug)]
 pub struct IrToM4 {
+    overwrite_n: Option<u32>,
     llvm_ir: LlvmIr,
     cortex_wc: Vec<CortexM4>,
     cortex_bc: Vec<CortexM4>,
@@ -18,306 +19,353 @@ pub struct IrToM4 {
 impl IrToM4 {
     pub fn new(llvm_ir: &str) -> IrToM4 {
         match LlvmIr::from_string(llvm_ir) {
-            Some(LlvmIr::Ret) => IrToM4 {
+            Some((LlvmIr::Ret, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Ret,
-                cortex_wc: vec![CortexM4::MOVpc, CortexM4::POPpc, CortexM4::MOVpc],
-                cortex_bc: vec![CortexM4::B],
+                cortex_wc: vec![CortexM4::ADDpc, CortexM4::POPpc],
+                cortex_bc: vec![],
             },
-            Some(LlvmIr::Br) => IrToM4 {
+            Some((LlvmIr::Br, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Br,
                 cortex_wc: vec![CortexM4::B],
                 cortex_bc: vec![CortexM4::B]
             },
-            Some(LlvmIr::BrIl) => IrToM4 {
+            Some((LlvmIr::BrIl, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::BrIl,
                 cortex_wc: vec![CortexM4::Bcc],
                 cortex_bc: vec![CortexM4::Bcc]
             },
-            Some(LlvmIr::IndirectBr) => IrToM4 {
+            Some((LlvmIr::IndirectBr, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::IndirectBr,
                 cortex_wc: vec![CortexM4::B],
                 cortex_bc: vec![CortexM4::B],
             },
-            //check this more thoroughly
-            Some(LlvmIr::Switch) => IrToM4 {
+            Some((LlvmIr::Switch, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Switch,
-                cortex_wc: vec![CortexM4::B],
-                cortex_bc: vec![CortexM4::B],
+                cortex_wc: vec![CortexM4::TBB],
+                cortex_bc: vec![CortexM4::TBB],
             },
-            Some(LlvmIr::_Unreachable)  => todo!(),
-            Some(LlvmIr::_Invoke)  => todo!(),
-            Some(LlvmIr::Call)  => IrToM4 {
+            Some((LlvmIr::_Unreachable, _))  => todo!(),
+            Some((LlvmIr::_Invoke, _))  => todo!(),
+            Some((LlvmIr::Call, overwrite_n))  => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Call,
-                cortex_wc: vec![CortexM4::PUSH, CortexM4::MOVreg, CortexM4::BL],
-                cortex_bc: vec![CortexM4::B],
+                cortex_wc: vec![CortexM4::PUSH, CortexM4::ADDpc, CortexM4::BL],
+                cortex_bc: vec![CortexM4::BL],
             },
             //check this more thoroughly
-            Some(LlvmIr::PHI)  => IrToM4 {
+            Some((LlvmIr::PHI, overwrite_n))  => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::PHI,
-                cortex_wc: vec![],
-                cortex_bc: vec![],
+                cortex_wc: vec![CortexM4::MOVT],
+                cortex_bc: vec![CortexM4::MOVT],
             },
             //check this more thoroughly
-            Some(LlvmIr::Select)  => IrToM4 {
+            Some((LlvmIr::Select, overwrite_n))  => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Select,
                 cortex_wc: vec![CortexM4::B],
                 cortex_bc: vec![CortexM4::B],
             },
-            //check this more thoroughly
-            Some(LlvmIr::VAArg) => IrToM4 {
-                llvm_ir: LlvmIr::VAArg,
-                cortex_wc: vec![CortexM4::B],
-                cortex_bc: vec![CortexM4::B],
-            },
-            Some(LlvmIr::Add) => IrToM4 {
+            Some((LlvmIr::VAArg, _)) => todo!(),
+            Some((LlvmIr::Add, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Add,
                 cortex_wc: vec![CortexM4::ADDpc],
                 cortex_bc: vec![CortexM4::ADDreg],
             },
-            Some(LlvmIr::Sub) => IrToM4 {
+            Some((LlvmIr::Sub, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Sub,
                 cortex_wc: vec![CortexM4::SUB],
                 cortex_bc: vec![CortexM4::SUB],
             },
-            Some(LlvmIr::Mul) => IrToM4 {
+            Some((LlvmIr::Mul, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Mul,
                 cortex_wc: vec![CortexM4::MUL],
                 cortex_bc: vec![CortexM4::MUL],
             },
-            Some(LlvmIr::UDiv) => IrToM4 {
+            Some((LlvmIr::UDiv, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::UDiv,
                 cortex_wc: vec![CortexM4::UDIV],
                 cortex_bc: vec![CortexM4::UDIV],
             },
-            Some(LlvmIr::SDiv) => IrToM4 {
+            Some((LlvmIr::SDiv, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::SDiv,
                 cortex_wc: vec![CortexM4::UDIV],
                 cortex_bc: vec![CortexM4::UDIV],
             },
-            Some(LlvmIr::URem) => IrToM4 {
+            Some((LlvmIr::URem, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::URem,
                 cortex_wc: vec![CortexM4::UDIV],
                 cortex_bc: vec![CortexM4::UDIV],
             },
-            Some(LlvmIr::SRem) => IrToM4 {
+            Some((LlvmIr::SRem, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::SRem,
                 cortex_wc: vec![CortexM4::UDIV],
                 cortex_bc: vec![CortexM4::UDIV],
             },
-            Some(LlvmIr::And) => IrToM4 {
+            Some((LlvmIr::And, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::And,
                 cortex_wc: vec![CortexM4::AND],
                 cortex_bc: vec![CortexM4::AND],
             },
-            Some(LlvmIr::Or) => IrToM4 {
+            Some((LlvmIr::Or, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Or,
-                cortex_wc: vec![CortexM4::AND],
-                cortex_bc: vec![CortexM4::AND],
+                cortex_wc: vec![CortexM4::ORR],
+                cortex_bc: vec![CortexM4::ORR],
             },
-            Some(LlvmIr::Xor) => IrToM4 {
+            Some((LlvmIr::Xor, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Xor,
-                cortex_wc: vec![CortexM4::AND],
-                cortex_bc: vec![CortexM4::AND],
+                cortex_wc: vec![CortexM4::EOR],
+                cortex_bc: vec![CortexM4::EOR],
             },
-            Some(LlvmIr::Shl) => IrToM4 {
+            Some((LlvmIr::Shl, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Shl,
                 cortex_wc: vec![CortexM4::LSL],
                 cortex_bc: vec![CortexM4::LSL],
             },
-            Some(LlvmIr::LShr) => IrToM4 {
+            Some((LlvmIr::LShr, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::LShr,
                 cortex_wc: vec![CortexM4::LSL],
                 cortex_bc: vec![CortexM4::LSL],
             },
-            Some(LlvmIr::AShr) => IrToM4 {
+            Some((LlvmIr::AShr, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::AShr,
                 cortex_wc: vec![CortexM4::LSL],
                 cortex_bc: vec![CortexM4::LSL],
             },
-            Some(LlvmIr::ICmp) => IrToM4 {
+            Some((LlvmIr::ICmp, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::ICmp,
                 cortex_wc: vec![CortexM4::CMP],
-                cortex_bc: vec![CortexM4::CMP],
+                cortex_bc: vec![CortexM4::IT],
             },
             //SUB is always with PC, therefor the sub instr
             //will always be worst-case. Undervalueing best-case isnt that
             //much of a biggie
-            Some(LlvmIr::Alloca) => IrToM4 {
+            Some((LlvmIr::Alloca, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Alloca,
-                cortex_wc: vec![CortexM4::SUB, CortexM4::MOVpc],
-                cortex_bc: vec![CortexM4::SUB],
+                cortex_wc: vec![CortexM4::MOVreg,CortexM4::MOVreg],
+                cortex_bc: vec![CortexM4::MOVreg,CortexM4::MOVreg],
             },
-            Some(LlvmIr::Load) => IrToM4 {
+            Some((LlvmIr::Load, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Load,
                 cortex_wc: vec![CortexM4::LDRreg],
                 cortex_bc: vec![CortexM4::LDRpc],
             },
-            Some(LlvmIr::Store) => IrToM4 {
+            Some((LlvmIr::Store, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Store,
                 cortex_wc: vec![CortexM4::STR],
                 cortex_bc: vec![CortexM4::STR],
             },
             //check this more thoroughly
-            Some(LlvmIr::GetElementPtr) => IrToM4 {
+            Some((LlvmIr::GetElementPtr, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::GetElementPtr,
-                cortex_wc: vec![CortexM4::ADDreg],
-                cortex_bc: vec![CortexM4::ADDreg],
+                cortex_wc: vec![CortexM4::MOVreg],
+                cortex_bc: vec![CortexM4::MOVreg],
             },
             //check this more thoroughly
-            Some(LlvmIr::Trunc) => IrToM4 {
+            Some((LlvmIr::Trunc, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Trunc,
                 cortex_wc: vec![CortexM4::SXTH],
                 cortex_bc: vec![],
             },
             //check this more thoroughly
-            Some(LlvmIr::ZExt) => IrToM4 {
+            Some((LlvmIr::ZExt, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::ZExt,
                 cortex_wc: vec![CortexM4::LSL],
                 cortex_bc: vec![CortexM4::LSL],
             },
             //check this more thoroughly
-            Some(LlvmIr::SExt) => IrToM4 {
+            Some((LlvmIr::SExt, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::SExt,
                 cortex_wc: vec![CortexM4::LSL],
                 cortex_bc: vec![CortexM4::LSL],
             },
             //check this more thoroughly
-            Some(LlvmIr::IntToPtr) => IrToM4 {
+            Some((LlvmIr::IntToPtr, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::IntToPtr,
                 cortex_wc: vec![CortexM4::SXTH],
                 cortex_bc: vec![],
             },
             //check this more thoroughly
-            Some(LlvmIr::PtrToInt) => IrToM4 {
+            Some((LlvmIr::PtrToInt, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::PtrToInt,
                 cortex_wc: vec![CortexM4::SXTH],
                 cortex_bc: vec![],
             },
             //check this more thoroughly
-            Some(LlvmIr::BitCast) => IrToM4 {
+            Some((LlvmIr::BitCast, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::BitCast,
                 cortex_wc: vec![],
                 cortex_bc: vec![],
             },
             //check this more thoroughly
-            Some(LlvmIr::FNeg) => IrToM4 {
+            Some((LlvmIr::FNeg, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::FNeg,
                 cortex_wc: vec![CortexM4::AND],
                 cortex_bc: vec![CortexM4::AND],
             },
-            Some(LlvmIr::FAdd) => IrToM4 {
+            Some((LlvmIr::FAdd, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::FAdd,
                 cortex_wc: vec![CortexM4::ADDreg],
                 cortex_bc: vec![CortexM4::ADDreg],
             },
-            Some(LlvmIr::FSub) => IrToM4 {
+            Some((LlvmIr::FSub, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::FSub,
                 cortex_wc: vec![CortexM4::SUB],
                 cortex_bc: vec![CortexM4::SUB],
             },
-            Some(LlvmIr::FMul) => IrToM4 {
+            Some((LlvmIr::FMul, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::FMul,
                 cortex_wc: vec![CortexM4::MUL],
                 cortex_bc: vec![CortexM4::MUL],
             },
-            Some(LlvmIr::FDiv) => IrToM4 {
+            Some((LlvmIr::FDiv, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::FDiv,
                 cortex_wc: vec![CortexM4::UDIV],
                 cortex_bc: vec![CortexM4::UDIV],
 
             },
             //check this more thoroughly
-            Some(LlvmIr::FRem) => IrToM4 {
+            Some((LlvmIr::FRem, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::FRem,
                 cortex_wc: vec![CortexM4::UDIV],
                 cortex_bc: vec![CortexM4::UDIV],
             },
             //check this more thoroughly
-            Some(LlvmIr::FPTrunc) => IrToM4 {
+            Some((LlvmIr::FPTrunc, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::FPTrunc,
-                cortex_wc: vec![CortexM4::SXTH],
+                cortex_wc: vec![],
                 cortex_bc: vec![],
             },
             //check this more thoroughly
-            Some(LlvmIr::FPExt) => IrToM4 {
+            Some((LlvmIr::FPExt, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::FPExt,
                 cortex_wc: vec![CortexM4::SXTH],
                 cortex_bc: vec![CortexM4::SXTH],
             },
-            Some(LlvmIr::FPToUI) => IrToM4 {
+            Some((LlvmIr::FPToUI, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::FPToUI,
                 cortex_wc: vec![CortexM4::SXTH],
                 cortex_bc: vec![CortexM4::SXTH],
             },
             //check this more thoroughly
-            Some(LlvmIr::FPToSI) => IrToM4 {
+            Some((LlvmIr::FPToSI, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::FPToSI,
                 cortex_wc: vec![CortexM4::SXTH],
                 cortex_bc: vec![CortexM4::SXTH],
             },
             //check this more thoroughly
-            Some(LlvmIr::UIToFP) => IrToM4 {
+            Some((LlvmIr::UIToFP, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::UIToFP,
-                cortex_wc: vec![CortexM4::SXTH],
-                cortex_bc: vec![CortexM4::SXTH],
+                cortex_wc: vec![],
+                cortex_bc: vec![],
             },
             //check this more thoroughly
-            Some(LlvmIr::SIToFP) => IrToM4 {
+            Some((LlvmIr::SIToFP, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::SIToFP,
                 cortex_wc: vec![CortexM4::SXTH],
                 cortex_bc: vec![CortexM4::SXTH],
             },
             //check this more thoroughly
-            Some(LlvmIr::FCmp) => IrToM4 {
+            Some((LlvmIr::FCmp, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::FCmp,
                 cortex_wc: vec![CortexM4::AND],
                 cortex_bc: vec![CortexM4::AND],
             },
             //check this more thoroughly
-            Some(LlvmIr::InsertValue) => IrToM4 {
+            Some((LlvmIr::InsertValue, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::InsertValue,
                 cortex_wc: vec![CortexM4::PUSH],
                 cortex_bc:vec![CortexM4::PUSH],
             },
             //check this more thoroughly
-            Some(LlvmIr::ExtractValue) => IrToM4 {
+            Some((LlvmIr::ExtractValue, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::ExtractValue,
                 cortex_wc: vec![CortexM4::POP],
                 cortex_bc: vec![CortexM4::POP]
             },
             //check this more thoroughly
-            Some(LlvmIr::Fence) => IrToM4 {
+            Some((LlvmIr::Fence, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::Fence,
                 cortex_wc: vec![],
                 cortex_bc: vec![],
             },
             //check this more thoroughly
-            Some(LlvmIr::InsertElement) => IrToM4 {
+            Some((LlvmIr::InsertElement, overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::InsertElement,
                 cortex_wc: vec![CortexM4::PUSH],
                 cortex_bc:vec![CortexM4::PUSH],
             },
             //check this more thoroughly
-            Some(LlvmIr::ExtractElement ) => IrToM4 {
+            Some((LlvmIr::ExtractElement , overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::ExtractElement,
                 cortex_wc: vec![CortexM4::POP],
                 cortex_bc: vec![CortexM4::POP]
 
             },
             //check this more thoroughly
-            Some(LlvmIr::ShuffleVector ) => IrToM4 {
+            Some((LlvmIr::ShuffleVector , overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::ShuffleVector,
                 cortex_wc: vec![CortexM4::AND],
                 cortex_bc: vec![CortexM4::AND],
             },
             //Should just crash?
-            Some(LlvmIr::AtomicRMW ) => IrToM4 {
+            Some((LlvmIr::AtomicRMW , overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::AtomicRMW,
                 cortex_wc: vec![CortexM4::AND],
                 cortex_bc: vec![CortexM4::AND],
             },
             //Should just crash?
-            Some(LlvmIr::AtomicCmpXchg ) => IrToM4 {
+            Some((LlvmIr::AtomicCmpXchg , overwrite_n)) => IrToM4 {
+                overwrite_n,
                 llvm_ir: LlvmIr::AtomicCmpXchg,
                 cortex_wc: vec![CortexM4::AND],
                 cortex_bc: vec![CortexM4::AND],
@@ -325,11 +373,17 @@ impl IrToM4 {
             None => todo!(),
         }
     }
-    pub fn get_upper(self, b:u32, n:u32, w:u32) -> u32 {
+    pub fn get_upper(self, b:u32, mut n:u32, w:u32) -> u32 {
+        if self.overwrite_n.is_some() {
+            n = self.overwrite_n.unwrap();
+        }
         self.cortex_wc.into_iter().map(|x|x.get_upper(b,n,w)).sum()
     }
 
-    pub fn get_lower(self, b:u32, n:u32, w:u32) -> u32 {
+    pub fn get_lower(self, b:u32, mut n:u32, w:u32) -> u32 {
+        if self.overwrite_n.is_some() {
+            n = self.overwrite_n.unwrap();
+        }
         self.cortex_bc.into_iter().map(|x|x.get_lower(b,n,w)).sum()
     }
 
