@@ -394,13 +394,20 @@ impl BlockCalculator {
         self.block_stack = stack;
         let x  = self.block_stack.len() as u64;
         let main_number = self.fn_map.get(&"main".to_string()).unwrap().clone();
-        self.solve_fn_control_flow((main_number,0));
+        let res = self.solve_fn_control_flow((main_number,0));
+        if res.is_err() {
+            println!("Unable to estimate cycles for this path.");
+            println!("Reason:");
+            println!("{}", res.unwrap_err());
+            return;
+        }
+        println!("Estimated cycles: {}", self.cycles);
         println!("block_stack_size: before: {} after: {}", x, self.block_stack.len());
-        println!("cycle/block ratio * 100: {}", (x*100)/self.cycles);
+        println!("cycle/'block' ratio * 100: {}", (x*100)/self.cycles);
     } 
 
     //Tries to refollow the control flow as specified by the block stack
-    fn solve_fn_control_flow(&mut self, fn_key: (i32, i32)) {
+    fn solve_fn_control_flow(&mut self, fn_key: (i32, i32))  -> Result<(), String> {
         let mut key = fn_key;
         loop {
             self.print_if_verbose(format!("currently in block: {:?}", key));
@@ -415,11 +422,14 @@ impl BlockCalculator {
                     continue;
                 }
                 let fn_nr = self.fn_map.get(&c).unwrap().clone();
-                self.solve_fn_control_flow((fn_nr, 0));
+                let call_result = self.solve_fn_control_flow((fn_nr, 0));
+                if call_result.is_err() {
+                    return call_result;
+                }
             }
             current_block = self.block_map.get(&key).unwrap();
             if current_block.successors.len() == 0 && !current_block.conditional_return{
-                return;
+                return Ok(());
             }
             else if current_block.successors.len() == 1 && !current_block.conditional_return{
                 key = current_block.successors[0];
@@ -430,6 +440,9 @@ impl BlockCalculator {
                 //pop stack until we find the current block
                 while !(*self.block_stack.last().unwrap().0 == current_block.function.clone() &&
                         *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone()){
+                    if self.block_stack.len() == 0 {
+                        return Err(format!("block_stack empty in {} in function {}", current_block.llvmir_label, current_block.function));
+                    }
                     if self.settings.verbose {
                         println!("{:?}", self.block_stack.pop());
                     }
@@ -441,12 +454,19 @@ impl BlockCalculator {
                 while *self.block_stack.last().unwrap().0 == current_block.function.clone() &&
                         *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone() &&
                         self.block_stack.last().unwrap().2{
+                    if self.block_stack.len() == 0 {
+                        return Err(format!("block_stack empty in {} in function {}", current_block.llvmir_label, current_block.function));
+                    }
                     if self.settings.verbose {
                         println!("{:?}", self.block_stack.pop());
                     }
                     else {
                         self.block_stack.pop();
                     }
+                }
+
+                if self.block_stack.len() == 0 {
+                    return Err(format!("block_stack empty in {} in function {}", current_block.llvmir_label, current_block.function));
                 }
 
                 //pop once to find the next block
@@ -475,7 +495,8 @@ impl BlockCalculator {
                     }
                 }
                 if !succ_found {
-                    panic!("could not find successor after table branch in {:?}", key);
+                    let err_msg = format!("could not find successor after table branch in {:?}", key);
+                    return Err(err_msg.clone());
                 }
             }
             else {
@@ -485,6 +506,9 @@ impl BlockCalculator {
                 //Pop the block stack until we find the current block
                 while !(*self.block_stack.last().unwrap().0 == current_block.function.clone() &&
                         *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone()){
+                    if self.block_stack.len() == 0 {
+                        return Err(format!("block_stack empty in {} in function {}", current_block.llvmir_label, current_block.function));
+                    }
                     if self.settings.verbose {
                         println!("{:?}", self.block_stack.pop());
                     }
@@ -496,12 +520,19 @@ impl BlockCalculator {
                 while *self.block_stack.last().unwrap().0 == current_block.function.clone() &&
                         *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone() &&
                         self.block_stack.last().unwrap().2{
+                    if self.block_stack.len() == 0 {
+                        return Err(format!("block_stack empty in {} in function {}", current_block.llvmir_label, current_block.function));
+                    }
                     if self.settings.verbose {
                         println!("{:?}", self.block_stack.pop());
                     }
                     else {
                         self.block_stack.pop();
                     }
+                }
+
+                if self.block_stack.len() == 0 {
+                    return Err(format!("block_stack empty in {} in function {}", current_block.llvmir_label, current_block.function));
                 }
 
                 //pop once to find the next block
@@ -540,7 +571,7 @@ impl BlockCalculator {
                     return;
                 }*/
                 if current_block.conditional_return {
-                    return;
+                    return Ok(());
                 }
 
                 self.print_if_verbose(format!("Could not find succcessor after block: {}", current_block.llvmir_label));
@@ -571,7 +602,7 @@ impl BlockCalculator {
                             key = current_block.successors[1];
                             break;
                         }
-                        panic!("could not return");
+                        return Err("could not return".to_string());
                     }
 
                     if self.asm_label_set.contains(&(next_tuple.0.clone(), next_tuple.1.clone())) {
@@ -599,8 +630,13 @@ impl BlockCalculator {
                             self.print_if_verbose(format!("found {:?}, branching there", next_tuple));
                             break;
                         }
-                        panic!("could not find path to label");
+                        return Err("could not find path to label".to_string());
                     }
+
+                    if self.block_stack.len() == 0 {
+                        return Err(format!("block_stack empty in {} in function {}", current_block.llvmir_label, current_block.function));
+                    }
+                    
                     //pop once to find the next block
                     self.block_stack.pop();
                     next_tuple = &self.block_stack[self.block_stack.len() - 1];
@@ -693,7 +729,6 @@ impl BlockCalculator {
         }
 
         while current_block.successors.len() == 1 {
-            println!("once");
             current_key = &current_block.successors[0];
             current_block = self.block_map.get(current_key).unwrap();
             current_cycles += current_block.cycles;
