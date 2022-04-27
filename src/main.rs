@@ -32,6 +32,7 @@ fn main() {
                 .takes_value(true)
                 .value_name("FILE_NAME")
                 .conflicts_with("rust")
+                .conflicts_with("rust-ex")
                 .help("Analyze a c program"),
         )
         .arg(
@@ -40,7 +41,17 @@ fn main() {
                 .takes_value(true)
                 .value_name("BINARY_NAME")
                 .conflicts_with("c")
+                .conflicts_with("rust-ex")
                 .help("Analyze a rust program"),
+        )
+        .arg(
+            Arg::new("rust-ex")
+                .long("rust-example")
+                .takes_value(true)
+                .value_name("EXAMPLE_BINARY_NAME")
+                .conflicts_with("c")
+                .conflicts_with("rust")
+                .help("Analyze a rust program example binary"),
         )
         .arg(
             Arg::new("optimize")
@@ -64,6 +75,7 @@ fn main() {
 
     let is_c_program = matches.is_present("c");
     let is_rust_program = matches.is_present("rust");
+    let is_rust_ex_program = matches.is_present("rust-ex");
     let optimize = matches.is_present("optimize");
     let new = matches.is_present("only-output-states-covering-new");
     let verbose = matches.is_present("verbose");
@@ -75,7 +87,11 @@ fn main() {
     }
     else if is_rust_program {
         println!("Analyzing rust program: {}", matches.value_of("rust").unwrap());
-        analyze_rust_program(matches.value_of("rust").unwrap().to_string(), true, new, verbose);
+        analyze_rust_program(matches.value_of("rust").unwrap().to_string(), true, new, verbose, false);
+    }
+    else if is_rust_ex_program {
+        println!("Analyzing rust program: {}", matches.value_of("rust-ex").unwrap());
+        analyze_rust_program(matches.value_of("rust-ex").unwrap().to_string(), true, new, verbose, true);
     }
   
     /*let mut dir2 = env::current_dir().unwrap();
@@ -95,7 +111,7 @@ fn main() {
 }
 
 
-fn analyze_rust_program(bin_name: String, opt: bool, _new: bool, verbose: bool) {
+fn analyze_rust_program(bin_name: String, opt: bool, _new: bool, verbose: bool, example: bool) {
     let dir = env::current_dir().unwrap();
     if !dir.join("Cargo.toml").exists() {
         println!("Could not find Cargo.toml file in current directory");
@@ -113,8 +129,13 @@ fn analyze_rust_program(bin_name: String, opt: bool, _new: bool, verbose: bool) 
         cargo_klee.arg("--release");
     }
 
-    cargo_klee.args(["--bin", &bin_name]);
-    cargo_klee.status().expect("Failed to run cargo klee.");
+    if example {
+        cargo_klee.args(["--example", &bin_name]);
+    }
+    else {
+        cargo_klee.args(["--bin", &bin_name]);  
+    }
+    cargo_klee.status().expect("Failed to run cargo klee."); 
 
     if !dir.join(".cargo").exists() {
         Command::new("mkdir")

@@ -77,7 +77,7 @@ impl LlvmIr {
             "Br" => Some((LlvmIr::Br, num)),
             "Br il" => Some((LlvmIr::BrIl,num)),
             "IndirectBr" => Some((LlvmIr::IndirectBr, num)),
-            "Swith" => Some((LlvmIr::Switch, num)),
+            "Switch" => Some((LlvmIr::Switch, num)),
             "Call" => Some((LlvmIr::Call, num)),
             "PHI" => Some((LlvmIr::PHI, num)),
             "Select" => Some((LlvmIr::Select, num)),
