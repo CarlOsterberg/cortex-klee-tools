@@ -131,12 +131,11 @@ fn analyze_rust_program(bin_name: String, opt: bool, _new: bool, verbose: bool, 
 
     if example {
         cargo_klee.args(["--example", &bin_name]);
-        cargo_klee.status().expect("Failed to run cargo klee.");
     }
     else {
-        cargo_klee.args(["--bin", &bin_name]);
-        cargo_klee.status().expect("Failed to run cargo klee.");   
+        cargo_klee.args(["--bin", &bin_name]);  
     }
+    cargo_klee.status().expect("Failed to run cargo klee."); 
 
     if !dir.join(".cargo").exists() {
         Command::new("mkdir")
