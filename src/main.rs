@@ -5,7 +5,6 @@ use std::io::Write;
 use std::{env, path::PathBuf, process::Command, fs};
 use clap::Arg;
 use clap::Command as App;
-use llvmir_to_m4_cycles::{IrToM4};
 use regex::Regex;
 use rustc_demangle::demangle;
 
@@ -285,6 +284,7 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
     //let path_labels = &labels[0].labels;
     let mut label_file_count = 0;
     println!("paths to analyze: {}", labels.len());
+    let mut cycles_results = Vec::new();
     for l in labels {
         let path_labels = l.labels;
         if path_labels[path_labels.len() - 1].0 != "main".to_string() {
@@ -333,15 +333,27 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
             println!("{:?}", pl);
         }*/
 
-        bc.solve_control_flow(path_labels_renamed);
+        let cycles = bc.solve_control_flow(path_labels_renamed);
 
         println!("file: {}", l.file_name);
         println!("paths run: {}", label_file_count);
 
-        let split: Vec<&str> = l.file_name.split(".").collect();
-        let cycle_file_name = format!("{}.cycles", split[0]);
-        fs::write(path.join(cycle_file_name), format!("Calculated cycles (bc): {}\n", bc.cycles)).expect("could not save cycles to file");
+        //let split: Vec<&str> = l.file_name.split(".").collect();
+        //let cycle_file_name = format!("{}.cycles", split[0]);
+        //fs::write(path.join(cycle_file_name), format!("Calculated cycles (bc): {}\n", bc.cycles)).expect("could not save cycles to file");
+        cycles_results.push((l.file_name, cycles.0, cycles.1));
     }
+
+    cycles_results.sort_by(|a, b| ktest_ord(a.0.clone(),b.0.clone()));
+    let mut filename = path.clone();
+    filename.push("Blocks.result");
+    let mut result_file = File::create(filename).expect("Couldn't create output file for block calculation");
+    cycles_results.sort_by(|a, b| ktest_ord(a.0.clone(),b.0.clone()));
+    for cycles_result in cycles_results {
+        let s = format!("{:?} lower: {:?}, upper: {:?}\n",cycles_result.0, cycles_result.1, cycles_result.2);
+        result_file.write_all(s.as_bytes()).unwrap();
+    }
+
 }
 
 fn run_ir_to_cycles(ktest_location: PathBuf) {
@@ -349,8 +361,8 @@ fn run_ir_to_cycles(ktest_location: PathBuf) {
         Ok(mut ktests) => {
             let mut filename = ktest_location.clone();
             filename.push("IrToCycles.result");
-            let mut result_file = File::create(filename).expect("Could'nt create output file for LLVM IR to cycles calculation");
-            ktests.sort_by(|a, b| ktest_ord(a,b));
+            let mut result_file = File::create(filename).expect("Couldn't create output file for LLVM IR to cycles calculation");
+            ktests.sort_by(|a, b| ktest_ord(a.0.clone(),b.0.clone()));
             for ktest in ktests {
                 let (name,ir_to_m4_vec) = ktest;
                 let mut sum_upper = 0;
@@ -369,7 +381,7 @@ fn run_ir_to_cycles(ktest_location: PathBuf) {
     }
 }
 
-fn ktest_ord(t: &(String, Vec<IrToM4>), e: &(String, Vec<IrToM4>)) -> Ordering {
+fn ktest_ord(t: String, e: String) -> Ordering {
     let t_num = get_ktest_num(t.clone()).unwrap();
     let e_num = get_ktest_num(e.clone()).unwrap();
     if t_num > e_num {
@@ -383,10 +395,10 @@ fn ktest_ord(t: &(String, Vec<IrToM4>), e: &(String, Vec<IrToM4>)) -> Ordering {
     }
 }
 
-fn get_ktest_num(ktest: (String, Vec<IrToM4>)) -> Option<u32> {
-    let validator = Regex::new("test0*[0-9]+[.]instructions").unwrap();
-    if validator.is_match(&ktest.0) {
-        let s = ktest.0.clone();
+fn get_ktest_num(ktest: String) -> Option<u32> {
+    let validator = Regex::new("test0*[0-9]+[.][a-z]+").unwrap();
+    if validator.is_match(&ktest) {
+        let s = ktest.clone();
         let prefix = s.split(".").into_iter().next()?;
         let num_w_pad = &prefix[4..];
         let num_string = remove_zero_padding(num_w_pad);

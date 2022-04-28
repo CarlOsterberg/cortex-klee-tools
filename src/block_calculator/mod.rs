@@ -397,7 +397,9 @@ impl BlockCalculator {
 
 
     //Finds the main routine and starts following the control flow
-    pub fn solve_control_flow(&mut self, stack: Vec<(String, String, bool)>) {
+    pub fn solve_control_flow(&mut self, stack: Vec<(String, String, bool)>) -> (u64, u64){
+        let lower;
+        let upper;
         self.cycles = 0;
         println!("----------------Starting new path----------------");
         let block_stack_clone = stack.clone();
@@ -409,9 +411,10 @@ impl BlockCalculator {
             println!("Unable to estimate cycles for this path (upper bound).");
             println!("Reason:");
             println!("{}", res_upper.unwrap_err());
-            return;
+            return (u64::MAX, u64::MAX);
         }
-        println!("Estimated cycles (upper bound): {}", self.cycles);
+        upper = self.cycles;
+        println!("Estimated cycles (upper bound): {}", upper);
         println!("block_stack_size: before: {} after: {}", x, self.block_stack.len());
         //println!("cycle/'block' ratio * 100: {}", (x*100)/self.cycles);
 
@@ -423,10 +426,12 @@ impl BlockCalculator {
             println!("Unable to estimate cycles for this path (lower bound).");
             println!("Reason:");
             println!("{}", res_lower.unwrap_err());
-            return;
+            return (u64::MAX, u64::MAX);
         }
-        println!("Estimated cycles (lower bound): {}", self.cycles);
+        lower = self.cycles;
+        println!("Estimated cycles (lower bound): {}", lower);
         println!("block_stack_size: before: {} after: {}", x, self.block_stack.len());
+        (lower, upper)
     } 
 
     //Tries to refollow the control flow as specified by the block stack
