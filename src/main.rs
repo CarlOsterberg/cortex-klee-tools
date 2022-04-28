@@ -350,6 +350,10 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
     let mut result_file = File::create(filename).expect("Couldn't create output file for block calculation");
     cycles_results.sort_by(|a, b| ktest_ord(a.0.clone(),b.0.clone()));
     for cycles_result in cycles_results {
+        //Path could not be solved
+        if cycles_result.1 == u64::MAX {
+            continue;
+        }
         let s = format!("{:?} lower: {:?}, upper: {:?}\n",cycles_result.0, cycles_result.1, cycles_result.2);
         result_file.write_all(s.as_bytes()).unwrap();
     }
