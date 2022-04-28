@@ -515,6 +515,26 @@ impl StringToCortexM4 {
         }
     }
 
+    pub fn get_lower_bound_cycles(&self, instr: &str) -> u32{
+        let width_removed = self.remove_width_spec(instr);
+        let cc_removed = self.remove_conditional_code(&width_removed);
+        if self.instr_map.contains_key(&cc_removed) {
+            return self.instr_map.get(&cc_removed).unwrap().clone().get_lower(0, 1, 1) as u32;
+        }
+        let mut s_removed = self.remove_s(&width_removed);
+        if self.instr_map.contains_key(&s_removed) {
+            return self.instr_map.get(&s_removed).unwrap().clone().get_lower(0, 1, 1) as u32;
+        }
+        else {
+            s_removed = self.remove_s(&cc_removed);
+            if self.instr_map.contains_key(&s_removed) {
+                return self.instr_map.get(&s_removed).unwrap().clone().get_lower(0, 1, 1) as u32;
+            }
+            println!("@@@@@@@@@@@@@@@@@@@@ unrecognized instruction: {} @@@@@@@@@@@@@@@@@@@@ ", instr);
+            return 1;
+        }
+    }
+
     fn remove_conditional_code(&self, instruction: &str)  -> String{
         if instruction.len() < 3 {
             return instruction.to_string();

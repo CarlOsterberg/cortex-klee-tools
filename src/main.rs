@@ -215,12 +215,6 @@ fn analyze_c_program(file_name: String, opt: bool, new: bool, verbose: bool) {
     run_labeler_and_bc(&dir, "assembly.ll".to_string(), &dir, settings)
 }
 
-#[allow(dead_code)]
-fn check_block_structure(path: &PathBuf, file_name: String, settings: Settings) {
-    let mut bc = block_calculator::BlockCalculator::new(settings);
-    bc.analyze_file_block_structure(path, &file_name);
-    bc.assert_analyzable_block_structure();
-}
 
 #[allow(dead_code)]
 fn run_labeler(path: &PathBuf, file_name: String) {
@@ -245,7 +239,7 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
 
 
     let path_clone = path.clone();
-    Command::new("llc-13")
+    Command::new("llc")
         .args(["-mtriple=arm-none-eabihf","-mattr=armv7e-m","-mcpu=cortex-m4", path_clone.join(labeled_file_name).to_str().unwrap()])
         .status()
         .expect("Failed to compile labeled IR file.");
