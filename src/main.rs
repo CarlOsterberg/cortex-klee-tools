@@ -103,6 +103,13 @@ fn analyze_rust_program(bin_name: String, opt: bool, _new: bool, verbose: bool, 
         return;
     }
 
+    if !dir.join(".cargo").exists() {
+        Command::new("mkdir")
+        .arg(".cargo")
+        .status()
+        .expect("Could not create directory .cargo");
+    }
+
     let config_file_path = dir.join(".cargo").join("config");
     fs::write(&config_file_path, format!("{}\n{}", "[build]", r#"target = "thumbv7em-none-eabihf""#)).expect("Could not write to config file");
 
@@ -120,16 +127,21 @@ fn analyze_rust_program(bin_name: String, opt: bool, _new: bool, verbose: bool, 
     }
     cargo_klee.status().expect("Failed to run cargo klee."); 
 
-    if !dir.join(".cargo").exists() {
-        Command::new("mkdir")
-        .arg(".cargo")
-        .status()
-        .expect("Could not create directory .cargo");
-    }
+    let mut path_to_label_files;
+    let mut path_to_ll_file;
 
-    let path_to_label_files = dir.join("target/thumbv7em-none-eabihf/release/deps/klee-last");
-    let path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/release/deps/klee-last");
-    
+    path_to_label_files = dir.join("target/thumbv7em-none-eabihf/release");
+    path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/release");
+
+    if example {
+        path_to_label_files.push("examples/klee-last");
+        path_to_ll_file.push("examples/klee-last");
+    }
+    else {
+        path_to_label_files.push("deps/klee-last");
+        path_to_ll_file.push("deps/klee-last");
+    }
+        
     let mut ll_file_name = "".to_string();
 
     let dir_read = path_to_ll_file.read_dir().expect("Could not read directory with .ll file");
