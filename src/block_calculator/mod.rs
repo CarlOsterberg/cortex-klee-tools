@@ -670,17 +670,20 @@ impl BlockCalculator {
                                     key = current_block.successors[0];
                                 }
                             }
+                            self.block_stack.push((current_block.function.clone(), current_block.llvmir_label.clone(), false));
                             self.print_if_verbose(format!("branching to {:?}", key));
                             break;
                         }
                         if first_path_to_label.0 {
                             key = current_block.successors[0];
                             self.print_if_verbose(format!("found {:?}, branching there", next_tuple));
+                            self.block_stack.push((current_block.function.clone(), current_block.llvmir_label.clone(), false));
                             break;
                         }
                         if second_path_to_label.0 {
                             key = current_block.successors[1];
                             self.print_if_verbose(format!("found {:?}, branching there", next_tuple));
+                            self.block_stack.push((current_block.function.clone(), current_block.llvmir_label.clone(), false));
                             break;
                         }
                         return Err("could not find path to label".to_string());
@@ -787,7 +790,44 @@ impl BlockCalculator {
         }
 
         else if current_block.successors.len() > 1 {
-            return (false, 0);
+            //While one of the successors is from the same IR basic block, follow this path
+            loop {
+                let mut found_self = false;
+                for s in &current_block.successors {
+                    if self.block_map.get(s).unwrap().llvmir_label == current_block.llvmir_label {
+                        if upper_bound {
+                            current_block_cycles = current_block.ub_cycles;
+                        }
+                        else {
+                            current_block_cycles = current_block.lb_cycles;
+                        }
+                        current_cycles += current_block_cycles;
+                        current_key = s;
+                        current_block = self.block_map.get(current_key).unwrap();
+
+                        found_self = true;
+                        break;
+                    }
+                }
+                if !found_self && current_block.successors.len() > 1{
+                    for s in &current_block.successors {
+                        if self.block_map.get(s).unwrap().llvmir_label == label {
+                            if upper_bound {
+                                current_block_cycles = current_block.ub_cycles;
+                            }
+                            else {
+                                current_block_cycles = current_block.lb_cycles;
+                            }
+                            current_cycles += current_block_cycles;
+                            return (true, current_cycles);
+                        }
+                    }
+                    return (false, 0);
+                }
+                if !found_self {
+                    break;
+                }
+            }
         }
 
         while current_block.successors.len() == 1 && current_block.llvmir_label != label{
