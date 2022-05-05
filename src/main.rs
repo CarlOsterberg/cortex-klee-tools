@@ -56,7 +56,7 @@ fn main() {
             Arg::new("optimize")
                 .long("optimize")
                 .short('o')
-                .help("Analyze optimized IR and assembly (Always true for rust)"),
+                .help("Optimize assembly code with llc"),
         )
         .arg(
             Arg::new("only-output-states-covering-new")
@@ -86,27 +86,13 @@ fn main() {
     }
     else if is_rust_program {
         println!("Analyzing rust program: {}", matches.value_of("rust").unwrap());
-        analyze_rust_program(matches.value_of("rust").unwrap().to_string(), true, new, verbose, false);
+        analyze_rust_program(matches.value_of("rust").unwrap().to_string(), optimize, new, verbose, false);
     }
     else if is_rust_ex_program {
         println!("Analyzing rust program: {}", matches.value_of("rust-ex").unwrap());
-        analyze_rust_program(matches.value_of("rust-ex").unwrap().to_string(), true, new, verbose, true);
+        analyze_rust_program(matches.value_of("rust-ex").unwrap().to_string(), optimize, new, verbose, true);
     }
-  
-    /*let mut dir2 = env::current_dir().unwrap();
-    dir2.push("src");
-    dir2.push("llvmir_labeler");
-    dir2.push("test_cases");
 
-    let mut dir4 = env::current_dir().unwrap();
-    dir4.push("src");
-    dir4.push("ktest_parser");
-    dir4.push("test_cases");
-    dir4.push("rustarm");
-
-    run_labeler_and_bc(&dir2, "rust_arm_assembly.ll".to_string(), &dir4);*/
-    //run_labeler(&dir2, "rust_arm_assembly.ll".to_string());
-    //check_block_structure(&dir2, "rust_arm_assembly_labeled.s".to_string());
 }
 
 
@@ -131,9 +117,7 @@ fn analyze_rust_program(bin_name: String, opt: bool, _new: bool, verbose: bool, 
     let mut cargo_klee = Command::new("cargo");
     cargo_klee.arg("klee");
 
-    if opt {
-        cargo_klee.arg("--release");
-    }
+    cargo_klee.arg("--release");
 
     if example {
         cargo_klee.args(["--example", &bin_name]);
@@ -146,14 +130,8 @@ fn analyze_rust_program(bin_name: String, opt: bool, _new: bool, verbose: bool, 
     let mut path_to_label_files;
     let mut path_to_ll_file;
 
-    if opt {
-        path_to_label_files = dir.join("target/thumbv7em-none-eabihf/release");
-        path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/release");
-    }
-    else {
-        path_to_label_files = dir.join("target/thumbv7em-none-eabihf/debug");
-        path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/debug");
-    }
+    path_to_label_files = dir.join("target/thumbv7em-none-eabihf/release");
+    path_to_ll_file = dir.join("target/thumbv7em-none-eabihf/release");
 
     if example {
         path_to_label_files.push("examples/klee-last");
@@ -163,7 +141,7 @@ fn analyze_rust_program(bin_name: String, opt: bool, _new: bool, verbose: bool, 
         path_to_label_files.push("deps/klee-last");
         path_to_ll_file.push("deps/klee-last");
     }
-    
+        
     let mut ll_file_name = "".to_string();
 
     let dir_read = path_to_ll_file.read_dir().expect("Could not read directory with .ll file");
@@ -183,7 +161,7 @@ fn analyze_rust_program(bin_name: String, opt: bool, _new: bool, verbose: bool, 
     }
 
     let settings = Settings::new(true, verbose);
-    run_labeler_and_bc(&path_to_ll_file, ll_file_name, &path_to_label_files, settings);
+    run_labeler_and_bc(&path_to_ll_file, ll_file_name, &path_to_label_files, settings, opt);
 }
 
 fn analyze_c_program(file_name: String, opt: bool, new: bool, verbose: bool) {
@@ -197,9 +175,7 @@ fn analyze_c_program(file_name: String, opt: bool, new: bool, verbose: bool) {
     let bc_file_name = format!("{}.bc", split[0]);
 
     let mut klee = Command::new("klee");
-    if opt {
-        klee.arg("--optimize");
-    }
+    klee.arg("--optimize");
     if new {
         klee.arg("--only-output-states-covering-new");
     }
@@ -211,7 +187,7 @@ fn analyze_c_program(file_name: String, opt: bool, new: bool, verbose: bool) {
     dir.push("klee-last");
     run_ir_to_cycles(dir.clone());
     let settings = Settings::new(false, verbose);
-    run_labeler_and_bc(&dir, "assembly.ll".to_string(), &dir, settings)
+    run_labeler_and_bc(&dir, "assembly.ll".to_string(), &dir, settings, opt);
 }
 
 
@@ -223,7 +199,7 @@ fn run_labeler(path: &PathBuf, file_name: String) {
     labeler.save_file(path, &file_name);
 }
 
-fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &PathBuf, settings: Settings) {
+fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &PathBuf, settings: Settings, opt: bool) {
     //Run the labeling tool
     let mut labeler = llvmir_labeler::Labeler::new();
     let _replaced_string = labeler.label_file(path, &file_name).unwrap();
@@ -238,10 +214,17 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
 
 
     let path_clone = path.clone();
-    Command::new("llc")
-        .args(["-mtriple=arm-none-eabihf","-mattr=armv7e-m","-mcpu=cortex-m4", path_clone.join(labeled_file_name).to_str().unwrap()])
-        .status()
-        .expect("Failed to compile labeled IR file.");
+    let mut llc = Command::new("llc");
+    llc.args(["-mtriple=arm-none-eabihf","-mattr=armv7e-m","-mcpu=cortex-m4", path_clone.join(labeled_file_name).to_str().unwrap()]);
+
+    if opt {
+        llc.arg("--O3");
+    }
+    else {
+        llc.arg("--O0");
+    }
+
+    llc.status().expect("Failed to compile labeled IR file.");
 
     println!("Compiled to assembly.");
 
