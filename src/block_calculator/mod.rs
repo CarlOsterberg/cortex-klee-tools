@@ -601,6 +601,12 @@ impl BlockCalculator {
                 }
                 //Successor not found, check if we should return
                 if current_block.conditional_return {
+                    let path_to_label = self.unconditional_path_to_label(&current_block.successors[0], next_tuple.1.clone(), current_block.llvmir_label.clone(), upper_bound);
+                    if path_to_label.0 {
+                        key = current_block.successors[0];
+                        self.block_stack.push((current_block.function.clone(), current_block.llvmir_label.clone(), false));
+                        continue;
+                    }
                     return Ok(());
                 }
 
@@ -646,9 +652,9 @@ impl BlockCalculator {
                         return Err("could not return".to_string());
                     }
 
-                    if self.asm_label_set.contains(&(next_tuple.0.clone(), next_tuple.1.clone())) {
+                    else if self.asm_label_set.contains(&(next_tuple.0.clone(), next_tuple.1.clone())) {
                         self.print_if_verbose(format!("attempting to find {:?}", next_tuple));
-                        self.print_if_verbose("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&".to_string());
+
                         let first_path_to_label = self.unconditional_path_to_label(&current_block.successors[0], next_tuple.1.clone(), current_block.llvmir_label.clone(), upper_bound);
                         let second_path_to_label = self.unconditional_path_to_label(&current_block.successors[1], next_tuple.1.clone(), current_block.llvmir_label.clone(),upper_bound);
                         if first_path_to_label.0 && second_path_to_label.0 {
@@ -686,6 +692,7 @@ impl BlockCalculator {
                             break;
                         }
                         return Err("could not find path to label".to_string());
+        
                     }
 
                     if self.block_stack.len() == 0 {
@@ -695,6 +702,7 @@ impl BlockCalculator {
                     //pop once to find the next block
                     self.block_stack.pop();
                     next_tuple = &self.block_stack[self.block_stack.len() - 1];
+                    self.print_if_verbose(format!("new target: {:?}", next_tuple));
                 }
             }
         }
@@ -804,43 +812,6 @@ impl BlockCalculator {
                 return (false, 0);
             }
         }
-
-        /*else if current_block.successors.len() > 1 {
-            //While one of the successors is from the same IR basic block, follow this path
-            loop {
-                let mut found_self = false;
-                for s in &current_block.successors {
-                    let b = self.block_map.get(s).unwrap();
-                    if b.llvmir_label == current_block.llvmir_label && b.direct_label {
-                        if upper_bound {
-                            current_block_cycles = current_block.ub_cycles;
-                        }
-                        else {
-                            current_block_cycles = current_block.lb_cycles;
-                        }
-                        current_cycles += current_block_cycles;
-                        current_key = s;
-                        current_block = self.block_map.get(current_key).unwrap();
-
-                        println!("FOUND SELF%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
-                        found_self = true;
-                        break;
-                    }
-                }
-                if found_self && current_block.successors.len() > 1{
-                    for s in &current_block.successors {
-                        if self.block_map.get(s).unwrap().llvmir_label == label {
-                            return (true, current_cycles);
-                        }
-                    }
-                    //return (false, 0);
-                    continue;
-                }
-                if !found_self {
-                    break;
-                }
-            }
-        }*/
 
         while current_block.successors.len() == 1 && current_block.llvmir_label != label{
             current_key = &current_block.successors[0];
