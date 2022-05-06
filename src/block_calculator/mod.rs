@@ -792,7 +792,8 @@ impl BlockCalculator {
             loop {
                 let mut found_self = false;
                 for s in &current_block.successors {
-                    if self.block_map.get(s).unwrap().llvmir_label == current_block.llvmir_label {
+                    let b = self.block_map.get(s).unwrap();
+                    if b.llvmir_label == current_block.llvmir_label && b.direct_label {
                         if upper_bound {
                             current_block_cycles = current_block.ub_cycles;
                         }

@@ -218,7 +218,7 @@ fn run_labeler_and_bc(path: &PathBuf, file_name: String, path_to_label_files: &P
     llc.args(["-mtriple=arm-none-eabihf","-mattr=armv7e-m","-mcpu=cortex-m4", path_clone.join(labeled_file_name).to_str().unwrap()]);
 
     if opt {
-        llc.arg("--O3");
+        llc.arg("--O2");
     }
     else {
         llc.arg("--O0");
