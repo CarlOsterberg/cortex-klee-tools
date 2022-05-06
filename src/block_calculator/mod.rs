@@ -600,9 +600,6 @@ impl BlockCalculator {
                     continue;
                 }
                 //Successor not found, check if we should return
-                /*if current_block.conditional_return && current_block.function != next_tuple.0 {
-                    return;
-                }*/
                 if current_block.conditional_return {
                     return Ok(());
                 }
@@ -611,6 +608,7 @@ impl BlockCalculator {
 
                 
                 loop {
+
                     //We should try to return
                     if next_tuple.0 != current_block.function {
                         self.print_if_verbose("attempting to return".to_string());
