@@ -588,8 +588,8 @@ impl BlockCalculator {
                     //The assembly label can be longer but we need to make sure it is not just another block
                     //for which our target block was a substring in the IR.
                     if b.function == next_tuple.0 && //function name has to be the same
-                    ((b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1 && !self.ir_label_set.contains(&(b.function.clone(), b.llvmir_label.clone())))
-                        || b.llvmir_label == next_tuple.1){
+                    (((b.llvmir_label[0..next_tuple.1.len()] == next_tuple.1 && !self.ir_label_set.contains(&(b.function.clone(), b.llvmir_label.clone())))
+                        || b.llvmir_label == next_tuple.1)) && b.direct_label{
                         self.print_if_verbose(format!("found ({}, {}), branching there", b.function, b.llvmir_label));
                         succ_found = true;
                         key = *s;
