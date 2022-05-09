@@ -495,42 +495,50 @@ impl StringToCortexM4 {
         }
     }
 
-    pub fn get_upper_bound_cycles(&self, instr: &str) -> u32{
+    pub fn get_upper_bound_cycles(&self, instr: &str, n: u32) -> u32{
         let width_removed = self.remove_width_spec(instr);
         let cc_removed = self.remove_conditional_code(&width_removed);
         if self.instr_map.contains_key(&cc_removed) {
-            return self.instr_map.get(&cc_removed).unwrap().clone().get_upper(3, 1, 1) as u32;
+            return self.instr_map.get(&cc_removed).unwrap().clone().get_upper(3, n, 1) as u32;
         }
         let mut s_removed = self.remove_s(&width_removed);
         if self.instr_map.contains_key(&s_removed) {
-            return self.instr_map.get(&s_removed).unwrap().clone().get_upper(3, 1, 1) as u32;
+            return self.instr_map.get(&s_removed).unwrap().clone().get_upper(3, n, 1) as u32;
         }
         else {
             s_removed = self.remove_s(&cc_removed);
             if self.instr_map.contains_key(&s_removed) {
-                return self.instr_map.get(&s_removed).unwrap().clone().get_upper(3, 1, 1) as u32;
+                return self.instr_map.get(&s_removed).unwrap().clone().get_upper(3, n, 1) as u32;
             }
             println!("@@@@@@@@@@@@@@@@@@@@ unrecognized instruction: {} @@@@@@@@@@@@@@@@@@@@ ", instr);
+            if instr[0..2] == "it".to_string() {
+                println!("Assuming it instruction");
+                return self.instr_map.get("it").unwrap().clone().get_upper(3, n, 1) as u32;
+            }
             return 1;
         }
     }
 
-    pub fn get_lower_bound_cycles(&self, instr: &str) -> u32{
+    pub fn get_lower_bound_cycles(&self, instr: &str, n: u32) -> u32{
         let width_removed = self.remove_width_spec(instr);
         let cc_removed = self.remove_conditional_code(&width_removed);
         if self.instr_map.contains_key(&cc_removed) {
-            return self.instr_map.get(&cc_removed).unwrap().clone().get_lower(0, 1, 1) as u32;
+            return self.instr_map.get(&cc_removed).unwrap().clone().get_lower(0, n, 1) as u32;
         }
         let mut s_removed = self.remove_s(&width_removed);
         if self.instr_map.contains_key(&s_removed) {
-            return self.instr_map.get(&s_removed).unwrap().clone().get_lower(0, 1, 1) as u32;
+            return self.instr_map.get(&s_removed).unwrap().clone().get_lower(0, n, 1) as u32;
         }
         else {
             s_removed = self.remove_s(&cc_removed);
             if self.instr_map.contains_key(&s_removed) {
-                return self.instr_map.get(&s_removed).unwrap().clone().get_lower(0, 1, 1) as u32;
+                return self.instr_map.get(&s_removed).unwrap().clone().get_lower(0, n, 1) as u32;
             }
             println!("@@@@@@@@@@@@@@@@@@@@ unrecognized instruction: {} @@@@@@@@@@@@@@@@@@@@ ", instr);
+            if instr[0..2] == "it".to_string() {
+                println!("Assuming it instruction");
+                return self.instr_map.get("it").unwrap().clone().get_lower(0, n, 1) as u32;
+            }
             return 1;
         }
     }

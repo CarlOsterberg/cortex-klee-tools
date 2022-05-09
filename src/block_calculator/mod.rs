@@ -220,8 +220,14 @@ impl BlockCalculator {
                 block_cycles_ub = 0;
             }
             if asm_instruction.is_match(row) {
-                block_cycles_lb += self.string_to_cycles.get_lower_bound_cycles(row.split_whitespace().collect::<Vec<&str>>()[0]) as u64;
-                block_cycles_ub += self.string_to_cycles.get_upper_bound_cycles(row.split_whitespace().collect::<Vec<&str>>()[0]) as u64;
+                let brackets_split: Vec<&str> = row.split("{").collect();
+                let mut n = 1;
+                if brackets_split.len() > 1 {
+                    let comma_split: Vec<&str> = brackets_split[1].split(",").collect();
+                    n = comma_split.len() as u32;
+                }
+                block_cycles_lb += self.string_to_cycles.get_lower_bound_cycles(row.split_whitespace().collect::<Vec<&str>>()[0], n) as u64;
+                block_cycles_ub += self.string_to_cycles.get_upper_bound_cycles(row.split_whitespace().collect::<Vec<&str>>()[0], n) as u64;
             }
         }
     }
