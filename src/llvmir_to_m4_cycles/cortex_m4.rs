@@ -495,6 +495,12 @@ impl StringToCortexM4 {
         }
     }
 
+    pub fn is_conditional(&self, instr: &str) -> bool {
+        let width_removed = self.remove_width_spec(instr);
+        let cc_removed = self.remove_conditional_code(&width_removed);
+        self.instr_map.contains_key(&cc_removed) 
+    }
+
     pub fn get_upper_bound_cycles(&self, instr: &str, n: u32) -> u32{
         let width_removed = self.remove_width_spec(instr);
         let cc_removed = self.remove_conditional_code(&width_removed);
@@ -520,6 +526,9 @@ impl StringToCortexM4 {
     }
 
     pub fn get_lower_bound_cycles(&self, instr: &str, n: u32) -> u32{
+        if self.is_conditional(instr) {
+            return 1;
+        }
         let width_removed = self.remove_width_spec(instr);
         let cc_removed = self.remove_conditional_code(&width_removed);
         if self.instr_map.contains_key(&cc_removed) {

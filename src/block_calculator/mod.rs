@@ -168,7 +168,8 @@ impl BlockCalculator {
                     let split: Vec<&str> = row.split("%").collect();
                     let label = split[split.len()-1];
                     //current_block_label = format!("%{}", label).to_string();
-                    current_block_label = label.to_string();
+                    current_block_label = BlockCalculator::remove_quotes(label.to_string());
+                    //println!("{}", current_block_label);
                     label_used = false;
                 }
             }
@@ -197,7 +198,8 @@ impl BlockCalculator {
                     let split: Vec<&str> = row.split("%").collect();
                     let label = split[split.len()-1];
                     //current_block_label = format!("%{}", label).to_string();
-                    current_block_label = label.to_string();
+                    current_block_label = BlockCalculator::remove_quotes(label.to_string());
+                    //println!("{}", current_block_label);
                     label_used = false;
                 }
             }
@@ -410,6 +412,13 @@ impl BlockCalculator {
         println!("----------------Starting new path----------------");
         let block_stack_clone = stack.clone();
         self.block_stack = stack;
+        /*println!("block stack ===");
+        for s in &self.block_stack {
+            if !s.2 {
+                println!("{}", s.1);
+            }
+        }
+        println!("===");*/
         let x  = self.block_stack.len() as u64;
         let main_number = self.fn_map.get(&"main".to_string()).unwrap().clone();
         let res_upper = self.solve_fn_control_flow((main_number,0), true);
@@ -446,6 +455,7 @@ impl BlockCalculator {
         loop {
             self.print_if_verbose(format!("currently in block: {:?}", key));
             let mut current_block = self.block_map.get(&key).unwrap();
+            //println!("{}, {}", current_block.function, current_block.llvmir_label);
             if upper_bound {
                 self.cycles += current_block.ub_cycles;
             }
@@ -517,7 +527,7 @@ impl BlockCalculator {
                 }
 
                 let next_tuple = &self.block_stack[self.block_stack.len() - 1];
-                println!("target tuple: {:?}", next_tuple);
+                self.print_if_verbose(format!("target tuple {:?}", next_tuple));
                 //let next_tuple = self.block_stack.pop().unwrap();
                 let mut succ_found = false;
                 for s in &current_block.successors {
@@ -665,6 +675,8 @@ impl BlockCalculator {
                         let second_path_to_label = self.unconditional_path_to_label(&current_block.successors[1], next_tuple.1.clone(), current_block.llvmir_label.clone(),upper_bound);
                         if first_path_to_label.0 && second_path_to_label.0 {
                             self.print_if_verbose("two paths to the target label, selecting the correct one".to_string());
+                            //println!("SELECTING PATH IN {}, {}", current_block.function, current_block.llvmir_label);
+                            //println!("looking for {:?}", next_tuple);
                             if first_path_to_label.1 > second_path_to_label.1 {
                                 if upper_bound {
                                     key = current_block.successors[0];
@@ -845,7 +857,32 @@ impl BlockCalculator {
         }
     }
 
-    
+    pub fn remove_quotes(input: String) -> String {
+        let chars = input.chars();
+        let count = chars.clone().count();
+        if count == 0 {
+            return "".to_string();
+        }
+        if chars.clone().last().unwrap() != '"' {
+            return input;
+        }
+        let mut i = 0;
+        let mut start_quotes = false;
+        let mut ret = "".to_string();
+        for c in chars {
+            if i == 0 && c == '"' {
+                start_quotes = true;
+            }
+            else if start_quotes && i < count - 1{
+                ret = format!("{}{}", ret, c);
+            }
+            i += 1;
+        }
+        if start_quotes {
+            return ret;
+        }
+        return "".to_string();
+    }
 
     pub fn print_maps(&mut self){
         for (key, value) in &self.block_map {
