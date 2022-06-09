@@ -62,6 +62,23 @@ pub fn init_conditional_branch_instructions() -> HashSet<String> {
     ret.insert("bgt".to_string());
     ret.insert("ble".to_string());
 
+    ret.insert("bxeq".to_string());
+    ret.insert("bxne".to_string());
+    ret.insert("bxcs".to_string());
+    ret.insert("bxhs".to_string());
+    ret.insert("bxcc".to_string());
+    ret.insert("bxlo".to_string());
+    ret.insert("bxmi".to_string());
+    ret.insert("bxpl".to_string());
+    ret.insert("bxvs".to_string());
+    ret.insert("bxvc".to_string());
+    ret.insert("bxhi".to_string());
+    ret.insert("bxls".to_string());
+    ret.insert("bxge".to_string());
+    ret.insert("bxlt".to_string());
+    ret.insert("bxgt".to_string());
+    ret.insert("bxle".to_string());
+
     ret.insert("cbz".to_string());
     ret.insert("cbnz".to_string());
     ret
@@ -241,6 +258,7 @@ impl BlockCalculator {
         let lbb_use = Regex::new(r".LBB(?P<x>[0-9]+)_(?P<y>[0-9]+)").unwrap();
         let bb = Regex::new(r"^(\s*)@(\s*)%bb.(?P<x>[0-9]+):").unwrap();
         let asm_fn_def = Regex::new(r"^(?P<x>[^.\s])(?P<y>[^\s]+):").unwrap();
+        let fn_end = Regex::new(r"^(\s*).fnend").unwrap();
         let asm_instruction = Regex::new(r"^(\s)+(?P<x>[a-z]+)").unwrap();
         let move_lr_to_pc = Regex::new(r"^(\s*)mov(s)*(.w)*(.n)*(\s*)pc(\s*),(\s*)lr").unwrap();
         let move_lr_to_pc_cond = Regex::new(r"^(\s*)mov[a-z]+(.w)*(.n)*(\s*)pc(\s*),(\s*)lr").unwrap();
@@ -248,6 +266,7 @@ impl BlockCalculator {
         let pop_multiple = Regex::new(r"^(\s*)pop([a-z]*)(.w)*(.n)*(\s*)[{]").unwrap();
         let pop_cond = Regex::new(r"^(\s*)pop[a-z]+").unwrap();
         let pop_s = Regex::new(r"^(\s*)pops").unwrap();
+        let cond_br_to_lr = Regex::new(r"^(\s*)b[a-z]+(\s+)lr").unwrap();
         let mut unconditional_block = false;
         let mut lr_popped = false;
         let mut conditional_return = false;
@@ -264,7 +283,7 @@ impl BlockCalculator {
                 table_branch = false;
                 lr_popped = false;
             }
-            else if lbb.is_match(row) {
+            else if lbb.is_match(row) || bb.is_match(row) {
                 if !unconditional_block && current_block_nr >= 0{
                     let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
                     old_block.successors.push((current_fn_nr, current_block_nr + 1));
@@ -279,7 +298,14 @@ impl BlockCalculator {
                 conditional_return = false;
                 lr_popped = false;
             }
-            else if bb.is_match(row) {
+            else if fn_end.is_match(row) {
+                if conditional_return {
+                    let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
+                    old_block.conditional_return = true;
+                    println!("--SET {}, {} to {}", current_fn_nr, current_block_nr, conditional_return);
+                }
+            }
+            /*else if bb.is_match(row) {
                 if !unconditional_block && current_block_nr >= 0{
                     let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
                     old_block.successors.push((current_fn_nr, current_block_nr + 1));
@@ -293,7 +319,7 @@ impl BlockCalculator {
                 unconditional_block = false;
                 conditional_return = false;
                 lr_popped = false;
-            }
+            }*/
             else if lbb_use.is_match(row) && table_branch {
                 let period_split: Vec<&str> = row.split(".").collect();
                 let dash_split: Vec<&str> = period_split[2].split("-").collect();
@@ -309,6 +335,11 @@ impl BlockCalculator {
             else if asm_instruction.is_match(row) {
                 for cap in asm_instruction.captures_iter(row){
                     if self.conditional_branch_instructions.contains(&cap[2].to_string()){
+                        if cond_br_to_lr.is_match(row) {
+                            println!("{}", row);
+                            conditional_return = true;
+                            continue;
+                        }
                         let lbb_split: Vec<&str> = row.split("LBB").collect();
                         let nr_split: Vec<&str> = lbb_split[1].split("_").collect();
                         let b_fn_nr = nr_split[0].parse().expect("expected number in LBB target");
@@ -553,30 +584,35 @@ impl BlockCalculator {
                 self.print_if_verbose(format!("performing conditional branch in: {} in function {} (tuple: {:?})", 
                     current_block.llvmir_label, current_block.function, key));
                 //Pop the block stack until we find the current block
+
+                if self.block_stack.is_empty() {
+                    return Err(format!("block_stack empty in {} in function {}", current_block.llvmir_label, current_block.function));
+                }
+
                 while !(*self.block_stack.last().unwrap().0 == current_block.function.clone() &&
                         *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone()){
-                    if self.block_stack.len() == 0 {
-                        return Err(format!("block_stack empty in {} in function {}", current_block.llvmir_label, current_block.function));
-                    }
                     if self.settings.verbose {
                         println!("{:?}", self.block_stack.pop());
                     }
                     else {
                         self.block_stack.pop();
+                    }
+                    if self.block_stack.len() == 0 {
+                        return Err(format!("block_stack empty in {} in function {}", current_block.llvmir_label, current_block.function));
                     }
                 }
                 //pop all the calls and find the next block
                 while *self.block_stack.last().unwrap().0 == current_block.function.clone() &&
                         *self.block_stack.last().unwrap().1 == current_block.llvmir_label.clone() &&
                         self.block_stack.last().unwrap().2{
-                    if self.block_stack.len() == 0 {
-                        return Err(format!("block_stack empty in {} in function {}", current_block.llvmir_label, current_block.function));
-                    }
                     if self.settings.verbose {
                         println!("{:?}", self.block_stack.pop());
                     }
                     else {
                         self.block_stack.pop();
+                    }
+                    if self.block_stack.len() == 0 {
+                        return Err(format!("block_stack empty in {} in function {}", current_block.llvmir_label, current_block.function));
                     }
                 }
 
@@ -742,6 +778,7 @@ impl BlockCalculator {
                                 let x = file_content_read_res.unwrap();
                                 self.build_map_first_pass(&x);
                                 self.build_map_second_pass(&x);
+                                self.print_maps();
                                 return;
                             }
                         }
@@ -889,6 +926,7 @@ impl BlockCalculator {
             println!("--map key is ({}, {})", key.0, key.1);
             println!("{}", value.llvmir_label);
             println!("direct label: {}", value.direct_label);
+            println!("cond return: {}", value.conditional_return);
             if value.successors.len() > 0 {
                 for s in &value.successors {
                     println!("successor: ({}, {})", s.0, s.1);

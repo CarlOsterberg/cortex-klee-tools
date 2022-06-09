@@ -142,6 +142,10 @@ mod tests {
         let fn_end = Regex::new(r"^(\s*).fnend").unwrap();
         let fn_end_test = "          .fnend";
         assert!(fn_end.is_match(fn_end_test));
+
+        let cond_br_to_lr = Regex::new(r"^(\s*)b[a-z]+(\s+)lr").unwrap();
+        let cond_br_to_lr_test = "	bxne	lr";
+        assert!(cond_br_to_lr.is_match(cond_br_to_lr_test));
     }
 
     #[test]    
