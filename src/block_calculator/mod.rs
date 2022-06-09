@@ -184,9 +184,7 @@ impl BlockCalculator {
                 if block_label.is_match(row) {
                     let split: Vec<&str> = row.split("%").collect();
                     let label = split[split.len()-1];
-                    //current_block_label = format!("%{}", label).to_string();
                     current_block_label = BlockCalculator::remove_quotes(label.to_string());
-                    //println!("{}", current_block_label);
                     label_used = false;
                 }
             }
@@ -214,9 +212,7 @@ impl BlockCalculator {
                 if block_label.is_match(row) {
                     let split: Vec<&str> = row.split("%").collect();
                     let label = split[split.len()-1];
-                    //current_block_label = format!("%{}", label).to_string();
                     current_block_label = BlockCalculator::remove_quotes(label.to_string());
-                    //println!("{}", current_block_label);
                     label_used = false;
                 }
             }
@@ -302,24 +298,8 @@ impl BlockCalculator {
                 if conditional_return {
                     let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
                     old_block.conditional_return = true;
-                    println!("--SET {}, {} to {}", current_fn_nr, current_block_nr, conditional_return);
                 }
             }
-            /*else if bb.is_match(row) {
-                if !unconditional_block && current_block_nr >= 0{
-                    let old_block = self.block_map.get_mut(&(current_fn_nr, current_block_nr)).unwrap();
-                    old_block.successors.push((current_fn_nr, current_block_nr + 1));
-                    old_block.conditional_return = conditional_return;
-                }
-                current_block_nr += 1;
-                //Table branch targets have been added
-                if unconditional_block {
-                    table_branch = false;
-                }
-                unconditional_block = false;
-                conditional_return = false;
-                lr_popped = false;
-            }*/
             else if lbb_use.is_match(row) && table_branch {
                 let period_split: Vec<&str> = row.split(".").collect();
                 let dash_split: Vec<&str> = period_split[2].split("-").collect();
@@ -336,7 +316,6 @@ impl BlockCalculator {
                 for cap in asm_instruction.captures_iter(row){
                     if self.conditional_branch_instructions.contains(&cap[2].to_string()){
                         if cond_br_to_lr.is_match(row) {
-                            println!("{}", row);
                             conditional_return = true;
                             continue;
                         }
@@ -443,13 +422,6 @@ impl BlockCalculator {
         println!("----------------Starting new path----------------");
         let block_stack_clone = stack.clone();
         self.block_stack = stack;
-        /*println!("block stack ===");
-        for s in &self.block_stack {
-            if !s.2 {
-                println!("{}", s.1);
-            }
-        }
-        println!("===");*/
         let x  = self.block_stack.len() as u64;
         let main_number = self.fn_map.get(&"main".to_string()).unwrap().clone();
         let res_upper = self.solve_fn_control_flow((main_number,0), true);
@@ -778,7 +750,6 @@ impl BlockCalculator {
                                 let x = file_content_read_res.unwrap();
                                 self.build_map_first_pass(&x);
                                 self.build_map_second_pass(&x);
-                                self.print_maps();
                                 return;
                             }
                         }
